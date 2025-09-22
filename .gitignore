@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local env files
+*.env
+*.local
+*.secret
+
+tyk-pro-docker-demo/
+
+

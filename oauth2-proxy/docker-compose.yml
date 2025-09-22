@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
+    container_name: oauth2-proxy
+    ports:
+      - "4180:4180"
+    command:
+      - --provider=oidc
+      - --oidc-issuer-url=http://172.21.92.213:4000/realms/portal
+      - --client-id=portal
+      - --code-challenge-method=S256
+      - --client-secret=secret
+      - --cookie-secret=A7OAbNZF6VvcdJGqkHmo8xXY5p24u45wByGYgmWyWwo=
+      - --email-domain=*
+      - --upstream=http://tyk-gateway:8080
+      - --http-address=0.0.0.0:4180
+      - --pass-access-token=false
+      - --set-authorization-header=true
+      - --pass-authorization-header=true
+      - --pass-user-headers=true
+      - --set-xauthrequest=true
+      - --session-store-type=redis
+      - --redis-connection-url=redis://tyk-redis:6379/0
+      - --skip-auth-preflight=true
+      - --skip-provider-button=true
+      - --cookie-secure=false
+      - --cookie-refresh=5m
+      - --cookie-expire=10m
+
+    networks:
+      - tyk
+    
+networks:
+  tyk:
+    name: tyk-pro-docker-demo_tyk
