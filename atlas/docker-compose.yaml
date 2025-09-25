@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  atlas:
+    image: keinstien/atlas:3.2.18
+    container_name: atlas
+    network_mode: host
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      ATLAS_UI_PORT: 8884
+      ATLAS_API_PORT: 8885
+    restart: unless-stopped

@@ -1,15 +1,15 @@
 version: "3.9"
 
 services:
-
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
     container_name: oauth2-proxy
+    restart: unless-stopped
     ports:
-      - "4180:4180"
+      - 4180
     command:
       - --provider=oidc
-      - --oidc-issuer-url=http://172.21.92.213:4000/realms/portal
+      - --oidc-issuer-url=https://sso.local/realms/portal
       - --client-id=portal
       - --code-challenge-method=S256
       - --client-secret=secret
@@ -26,13 +26,17 @@ services:
       - --redis-connection-url=redis://tyk-redis:6379/0
       - --skip-auth-preflight=true
       - --skip-provider-button=true
-      - --cookie-secure=false
+      - --cookie-secure=true
       - --cookie-refresh=5m
       - --cookie-expire=10m
+      - --provider-ca-file=/etc/oauth2-proxy/certs/ca.crt
+
+    volumes:
+      - ./certs:/etc/oauth2-proxy/certs:ro
 
     networks:
       - tyk
-    
+
 networks:
   tyk:
-    name: tyk-pro-docker-demo_tyk
+    name: tyk-network

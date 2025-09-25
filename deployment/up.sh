@@ -1,2 +1,29 @@
-cd tyk-pro-docker-demo && docker-compose -f ./docker-compose.yml -f ./docker-compose.mongo.yml up -d && cd ..
-cd keycloack && docker-compose up -d && cd .. && cd oauth2-proxy && docker-compose up -d && cd ..
+# 1. Bring up Tyk Control Plane
+(
+    cd control-plane || exit
+    docker-compose up -d
+)
+
+# 2. Bring up Keycloak Compose
+(
+    cd keycloak || exit
+    docker-compose up -d
+)
+
+# 3. Bring up OAuth2 Proxy Compose
+(
+    cd oauth2-proxy || exit
+    docker-compose up -d
+)
+
+# 4. Bring up Nginx Proxy Compose
+(
+    cd ngnix-proxy || exit
+    docker-compose up -d
+)
+
+# 5. Bring up atlas
+(
+    cd atlas || exit
+    docker-compose up -d
+)

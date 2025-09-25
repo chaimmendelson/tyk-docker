@@ -7,7 +7,26 @@ __pycache__/
 *.env
 *.local
 *.secret
+.env
 
-tyk-pro-docker-demo/
+# Ignore certificates and keys
+certs/
+*.crt
+*.key
+*.pem
+*.cert
+*.cer
+*.p12
+*.jks
+*.der
+*.pfx
+*.csr
+*.srl
+*.p7b
+*.p7c
+*.jceks
+*.bks
+*.truststore
+*.keystore
 
 

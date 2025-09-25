@@ -3,7 +3,7 @@ import pandas as pd
 
 # Paths to your k6 summary JSON files
 direct_file = "direct.json"
-proxy_file = "oauth2.json"
+proxy_file = "proxy.json"
 output_excel = "k6_comparison.csv"
 
 # Load JSON files
