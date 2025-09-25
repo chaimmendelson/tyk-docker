@@ -16,9 +16,9 @@
     docker-compose up -d
 )
 
-# 4. Bring up Nginx Proxy Compose
+# 4. Bring up Nginx Compose
 (
-    cd ngnix-proxy || exit
+    cd nginx || exit
     docker-compose up -d
 )
 

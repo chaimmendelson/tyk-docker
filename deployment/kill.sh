@@ -20,9 +20,9 @@ docker network inspect tyk-network -f '{{range $id, $c := .Containers}}{{$id}} {
     docker-compose down
 )
 
-# 5. Tear down Nginx Proxy Compose
+# 5. Tear down Nginx Compose
 (
-    cd ngnix-proxy || exit
+    cd nginx || exit
     docker-compose down
 )
 
