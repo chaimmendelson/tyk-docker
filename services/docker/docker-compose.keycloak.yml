@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:15
@@ -43,8 +41,4 @@ services:
 
 volumes:
   postgres_data:
-    name: keycloak_postgres_data
-
-networks:
-  tyk:
-    name: tyk-network
+    name: keycloak-postgres-data

@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   oauth2-proxy:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
@@ -32,11 +30,7 @@ services:
       - --provider-ca-file=/etc/oauth2-proxy/certs/ca.crt
 
     volumes:
-      - ./certs:/etc/oauth2-proxy/certs:ro
+      - ../certs/ca:/etc/oauth2-proxy/certs:ro
 
     networks:
       - tyk
-
-networks:
-  tyk:
-    name: tyk-network

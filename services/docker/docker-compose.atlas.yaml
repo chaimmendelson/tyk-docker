@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   atlas:
     image: keinstien/atlas:3.2.18

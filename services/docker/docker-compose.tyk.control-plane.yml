@@ -1,20 +1,18 @@
-version: '3.9'
-
 services:
   # ---------------- Base services ----------------
   tyk-gateway:
     image: tykio/tyk-gateway:${GATEWAY_VERSION:-v5.6.1}
-    container_name: tyk-gateway
+    container_name: tyk-control-plane-gateway
     ports:
       - "8080:8080"
     env_file:
-      - ./confs/tyk.env
+      - ../confs/tyk/control-plane/tyk.env
     networks:
       - tyk
 
   tyk-redis:
     image: redis
-    container_name: tyk-redis
+    container_name: tyk-control-plane-redis
     ports:
       - "6379:6379"
     volumes:
@@ -25,41 +23,39 @@ services:
   # ---------------- MongoDB override services ----------------
   tyk-dashboard:
     image: tykio/tyk-dashboard:${DASHBOARD_VERSION:-v5.6.1}
-    container_name: tyk-dashboard
+    container_name: tyk-control-plane-dashboard
     environment:
       - TYK_DB_LICENSEKEY=${DASH_LICENSE:?License key missing from Docker environment file "".env" file.}
     ports:
       - "3000:3000"
     env_file:
-      - ./confs/tyk_analytics.env
+      - ../confs/tyk/control-plane/tyk_analytics.env
     networks:
       - tyk
 
   tyk-pump:
     image: tykio/tyk-pump-docker-pub:v1.9.0
-    container_name: tyk-pump
+    container_name: tyk-control-plane-pump
     env_file:
-      - ./confs/pump.env
+      - ../confs/tyk/control-plane/pump.env
     networks:
       - tyk
 
   tyk-mongo:
     image: mongo:latest
-    container_name: tyk-mongo
+    container_name: tyk-control-plane-mongo
     command: ["mongod"]
     ports:
       - "27017:27017"
     volumes:
-      - db-data:/data/db
+      - mongo-data:/data/db
     networks:
       - tyk
 
 # ---------------- Volumes ----------------
 volumes:
   redis-data:
-  db-data:
-
-# ---------------- Networks ----------------
-networks:
-  tyk:
-    name: tyk-network
+    name: tyk-control-plane-redis-data
+  mongo-data:
+    name: tyk-control-plane-mongo-data
+ 
