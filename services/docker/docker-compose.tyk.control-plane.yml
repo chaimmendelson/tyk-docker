@@ -30,6 +30,20 @@ services:
       - "3000:3000"
     env_file:
       - ../confs/tyk/control-plane/tyk_analytics.env
+    volumes:
+      - ../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
+    networks:
+      - tyk
+
+  tyk-mdcb:
+    image: tykio/tyk-mdcb-docker:${MDCB_VERSION:-v2.5.1}
+    container_name: tyk-control-plane-mdcb
+    environment:
+      - TYK_MDCB_LICENSE=${MDCB_LICENSE:?License key missing from Docker environment file "".env" file.}
+    env_file:
+      - ../confs/tyk/control-plane/tyk_sync.env
+    volumes:
+      - ../certs/nginx:/etc/mdcb/certs:ro
     networks:
       - tyk
 

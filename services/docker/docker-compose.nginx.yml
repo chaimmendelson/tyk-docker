@@ -8,6 +8,7 @@ services:
       - "443:443"
     volumes:
       - ../confs/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../certs:/etc/nginx/certs:ro
+      - ../certs/nginx:/etc/nginx/certs:ro
+      - ../confs/nginx/domainNotFound.html:/usr/share/nginx/html/domainNotFound.html:ro
     networks:
       - tyk

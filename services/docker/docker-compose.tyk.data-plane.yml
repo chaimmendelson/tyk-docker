@@ -1,0 +1,26 @@
+services:
+  # ---------------- Base services ----------------
+  tyk-data-gateway:
+    image: tykio/tyk-gateway:${GATEWAY_VERSION:-v5.6.1}
+    container_name: tyk-data-plane-gateway
+    env_file:
+      - ../confs/tyk/data-plane/tyk.env
+    networks:
+      - tyk
+
+  tyk-data-redis:
+    image: redis
+    container_name: tyk-data-plane-redis
+    ports:
+      - "16379:6379"
+    volumes:
+      - data-plane-redis-data:/data
+    networks:
+      - tyk
+
+
+# ---------------- Volumes ----------------
+volumes:
+  data-plane-redis-data:
+    name: tyk-data-plane-redis-data
+ 

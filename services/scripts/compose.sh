@@ -10,3 +10,5 @@ done
 
 # Run docker compose with your .env file and all compose files
 docker compose --env-file .env "${compose_files[@]}" "$@"
+
+docker restart nginx || true
