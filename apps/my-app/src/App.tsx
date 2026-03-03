@@ -1,17 +1,21 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Container, Form, Button, Row, Col, Card } from "react-bootstrap";
 
 type Header = { key: string; value: string };
 
 export default function App() {
-
   const [url, setUrl] = useState("");
   const [method, setMethod] = useState("GET");
   const [headers, setHeaders] = useState<Header[]>([{ key: "", value: "" }]);
   const [body, setBody] = useState("");
   const [response, setResponse] = useState<any>(null);
 
+  // 🟢 Added: auto-send toggle state
+  const [autoSend, setAutoSend] = useState(false);
+  const intervalRef = useRef<number | null>(null);
+
   const sendRequest = async () => {
+    if (!url) return;
     const headersObj: Record<string, string> = {};
     headers.forEach((h) => {
       if (h.key && h.value) headersObj[h.key] = h.value;
@@ -27,7 +31,6 @@ export default function App() {
 
       const text = await res.text();
 
-      // Try to parse as JSON, fallback to text
       try {
         const json = JSON.parse(text);
         setResponse({
@@ -59,6 +62,23 @@ export default function App() {
     newHeaders[i][field] = value;
     setHeaders(newHeaders);
   };
+
+  // 🟢 Added: Effect to start/stop the auto-send loop
+  useEffect(() => {
+    if (autoSend) {
+      // Execute immediately once when enabled
+      sendRequest();
+      intervalRef.current = setInterval(sendRequest, 5000);
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [autoSend, url, method, body, headers]);
 
   return (
     <Container className="my-4">
@@ -133,10 +153,20 @@ export default function App() {
         </Form.Group>
       )}
 
-      {/* Send */}
-      <Button variant="primary" onClick={sendRequest}>
-        Send Request
-      </Button>
+      {/* Send & Auto-Send */}
+      <div className="d-flex gap-2 mb-3">
+        <Button variant="primary" onClick={sendRequest}>
+          Send Request
+        </Button>
+
+        {/* 🟢 Added toggle button */}
+        <Button
+          variant={autoSend ? "danger" : "outline-secondary"}
+          onClick={() => setAutoSend((prev) => !prev)}
+        >
+          {autoSend ? "Stop Auto Send" : "Start Auto Send (5s)"}
+        </Button>
+      </div>
 
       {/* Response */}
       {response && (

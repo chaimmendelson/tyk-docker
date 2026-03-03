@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Error</title>
+    <!-- 
+        Custom OAuth2 error page.
+        Implemented and designed by Dor Ravid.
+        For more information, contact me in phone: ***-****
+      -->
+    <meta name="author" content="Dor Ravid">
+    <style>
+        :root {
+            --bg: #0f1224;
+            --card: #171a33;
+            --card-soft: #1b1f3a;
+            --text: #e8eaf6;
+            --muted: #b6b9d6;
+            --accent: #6aa5ff;
+            --accent-2: #8ef1d7;
+
+            --border-soft: rgba(255, 255, 255, 0.06);
+            --shadow: 0 24px 45px rgba(5, 7, 18, 0.55);
+            --radius-lg: 20px;
+            --radius-pill: 999px;
+            --transition: 0.2s ease;
+        }
+
+        /* RESET */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+        }
+
+        .oauth-error-page {
+            background:
+                radial-gradient(1200px 800px at 80% -10%, rgba(106, 165, 255, .09), transparent 60%),
+                radial-gradient(1200px 800px at 10% 110%, rgba(142, 241, 215, .08), transparent 60%),
+                var(--bg);
+            color: var(--text);
+            font-family: "Heebo", system-ui, sans-serif;
+        }
+
+        /* MAIN LAYOUT */
+        .error-layout {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 15px;
+        }
+
+        .error-card {
+            width: 100%;
+            max-width: 640px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01));
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, .08);
+            box-shadow: var(--shadow);
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* TOP BANNER */
+        .top-banner {
+            width: 100%;
+            padding: 10px 18px;
+            background: linear-gradient(90deg, rgba(106, 165, 255, .18), rgba(142, 241, 215, .18));
+            border-bottom: 1px solid rgba(255, 255, 255, .08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .top-banner-text {
+            font-size: 0.92rem;
+            color: #eaf3ff;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .top-banner-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 0 4px rgba(106, 165, 255, .25);
+        }
+
+        /* HEADER */
+        .error-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 20px 22px 10px;
+        }
+
+        .status-chip {
+            width: 52px;
+            height: 52px;
+            border-radius: 20px;
+            background:
+                radial-gradient(circle at 25% 20%, rgba(142, 241, 215, 0.25), transparent 55%),
+                radial-gradient(circle at 75% 90%, rgba(106, 165, 255, 0.32), transparent 50%),
+                #11152b;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 1.3rem;
+        }
+
+        .error-title-block h1 {
+            margin: 0;
+            font-size: 1.28rem;
+        }
+
+        .error-subtitle {
+            margin: 2px 0 0;
+            color: var(--muted);
+            font-size: 0.92rem;
+        }
+
+        /* BODY */
+        .error-body {
+            padding: 0 22px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .lead {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .retry-text {
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Retry LINK BUTTON */
+        .link-button {
+            padding: 2px 9px;
+            border-radius: var(--radius-pill);
+            border: 1px solid rgba(106, 165, 255, 0.55);
+            background: rgba(106, 165, 255, 0.10);
+            color: var(--accent-2);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .link-button:hover {
+            background: rgba(106, 165, 255, 0.22);
+            border-color: rgba(106, 165, 255, 0.9);
+            box-shadow: 0 8px 16px rgba(6, 16, 60, 0.6);
+        }
+
+        /* REQUEST ID */
+        .request-id {
+            margin-top: 4px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        .request-id-value {
+            direction: ltr;
+            font-family: ui-monospace, Menlo, Consolas, monospace;
+            background: rgba(255, 255, 255, .07);
+            padding: 3px 7px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            user-select: all;
+        }
+
+        /* EXPANDERS */
+        .expander {
+            border-radius: 18px;
+            overflow: hidden;
+            margin-top: 4px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01));
+            border: 1px solid rgba(255, 255, 255, .08);
+            transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .expander:hover {
+            background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(255, 255, 255, .015));
+            border-color: rgba(106, 165, 255, .35);
+            box-shadow: 0 10px 24px rgba(7, 10, 25, .45);
+        }
+
+        .expander-summary {
+            padding: 11px 14px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            list-style: none;
+            font-size: 0.94rem;
+        }
+
+        .expander-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .expander-summary::after {
+            content: "▾";
+            opacity: 0.75;
+            font-size: 0.8rem;
+            transition: transform var(--transition), opacity var(--transition);
+        }
+
+        .expander[open] .expander-summary::after {
+            transform: rotate(180deg);
+            opacity: 1;
+        }
+
+        .expander-body {
+            padding: 12px 16px 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .expander-lead {
+            margin: 0 0 6px;
+            color: #ffffff;
+        }
+
+        .steps-list {
+            padding-inline-start: 1.2rem;
+        }
+
+        .steps-list li+li {
+            margin-top: 4px;
+        }
+
+        /* CONTACT LIST */
+        .contact-row {
+            display: flex;
+            gap: 8px;
+            margin: 4px 0;
+        }
+
+        .contact-row dt {
+            min-width: 90px;
+            color: var(--muted);
+        }
+
+        .contact-row dd {
+            margin: 0;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .hint {
+            margin-top: 6px;
+            font-size: 0.82rem;
+            color: var(--muted);
+        }
+
+        /* DEBUG FORM */
+        .debug-form {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .debug-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .debug-label {
+            font-size: 0.86rem;
+            color: var(--muted);
+            display: grid;
+            grid-template-columns: 170px minmax(0, 1fr);
+            column-gap: 8px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .debug-label-text {
+            white-space: nowrap;
+        }
+
+        .debug-input,
+        .debug-select {
+            padding: 7px 9px;
+            padding: 7px 9px;
+            padding-left: 26px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(6, 8, 22, 0.75);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.9rem;
+            width: 100%;
+        }
+
+        .debug-input {
+            direction: ltr;
+            text-align: left;
+        }
+
+        .debug-input::placeholder {
+            direction: rtl;
+            text-align: right;
+            unicode-bidi: plaintext;
+            color: rgba(182, 185, 214, 0.7);
+        }
+
+        .debug-select {
+            direction: rtl;
+            text-align: right;
+            cursor: pointer;
+        }
+
+        .debug-input:focus,
+        .debug-select:focus {
+            outline: none;
+            border-color: rgba(106, 165, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(106, 165, 255, 0.25);
+        }
+
+        .debug-actions {
+            display: flex;
+            justify-content: flex-start;
+            margin-top: 2px;
+        }
+
+        .debug-submit {
+            padding: 7px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(142, 241, 215, 0.9);
+            background: linear-gradient(135deg, rgba(142, 241, 215, 0.95), rgba(106, 165, 255, 0.95));
+            color: #0b1736;
+            font-weight: 700;
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+            white-space: nowrap;
+        }
+
+        .debug-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(6, 16, 60, 0.55);
+            opacity: 0.98;
+        }
+
+        .debug-submit:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 10px rgba(6, 16, 60, 0.45);
+        }
+
+        .debug-submit:disabled {
+            opacity: 0.65;
+            cursor: default;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* FOOTER */
+        .error-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 14px 22px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: conic-gradient(from 140deg,
+                    var(--accent),
+                    var(--accent-2),
+                    var(--accent));
+            box-shadow: 0 0 14px rgba(142, 241, 215, 0.7);
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(40px);
+            padding: 9px 18px;
+            border-radius: 999px;
+            background: rgba(8, 11, 30, 0.96);
+            color: var(--text);
+            font-size: 0.86rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 18px 35px rgba(0, 0, 0, 0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .toast-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-2);
+            box-shadow: 0 0 10px rgba(142, 241, 215, 0.7);
+            flex-shrink: 0;
+        }
+
+        .toast--visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast--success {
+            border-color: rgba(142, 241, 215, 0.9);
+        }
+
+        .toast--error {
+            border-color: rgba(255, 120, 120, 0.9);
+        }
+
+        /* SMALL SCREENS */
+        @media (max-width: 540px) {
+            .error-header {
+                padding: 16px 16px 8px;
+            }
+
+            .error-body {
+                padding: 0 16px 16px;
+            }
+
+            .debug-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .debug-label {
+                grid-template-columns: 1fr;
+                /* label text above input on narrow screens */
+            }
+
+            .debug-actions {
+                justify-content: flex-start;
+            }
+        }
+    </style>
+</head>
+
+<body class="oauth-error-page">
+
+    <!-- Toast container -->
+    <output id="toast" class="toast" aria-live="polite" aria-atomic="true">
+        <span class="toast-dot"></span>
+        <span class="toast-message"></span>
+    </output>
+
+    <main class="error-layout">
+        <section class="error-card" aria-labelledby="error-title">
+
+            <!-- TOP BANNER -->
+            <header class="top-banner">
+                <div class="top-banner-text">הודעת מערכת • שגיאת התחברות</div>
+                <div class="top-banner-dot" aria-hidden="true"></div>
+            </header>
+
+            <!-- TITLE + STATUS -->
+            <section class="error-header">
+                <span class="status-chip" aria-label="קוד שגיאה">{{ .StatusCode }}</span>
+                <div class="error-title-block">
+                    <h1 id="error-title">לא הצלחנו להתחבר למערכת</h1>
+                    <p class="error-subtitle">תקלה זמנית במערכת ההזדהות</p>
+                </div>
+            </section>
+
+            <!-- MAIN BODY -->
+            <section class="error-body">
+                <p class="lead">
+                    תהליך ההתחברות נעצר עקב תקלה זמנית באחד משרתי ההזדהות. לרוב זו בעיה שחולפת
+                    מעצמה לאחר מספר דקות.
+                </p>
+
+                <p class="retry-text">
+                    לפני שאתם פונים לתמיכה, נסו
+                    <a href="/oauth2/sign_in" class="link-button">להתחבר שוב</a>
+                    ולבדוק אם התקלה נפתרה.
+                </p>
+
+                <!-- REQUEST ID -->
+                <p class="request-id">
+                    מזהה אירוע (Request ID):
+                    <span class="request-id-value">{{ .RequestID }}</span>
+                </p>
+
+                <!-- EXPANDER 1 -->
+                <details class="expander">
+                    <summary class="expander-summary">
+                        מה ניתן לעשות עכשיו?
+                    </summary>
+
+                    <div class="expander-body">
+                        <p class="expander-lead">
+                            אם ניסיון התחברות נוסף לא פתר את הבעיה, מומלץ לבצע את הצעדים הבאים:
+                        </p>
+
+                        <ul class="steps-list">
+                            <li>רעננו את הדף (Ctrl+Shift+R) ונסו שוב לאחר מספר שניות.</li>
+                            <li>בדקו אם התקבלה הודעה ארגונית על תקלה בשירותי ההזדהות.</li>
+                            <li>אם התקלה נמשכת לאורך זמן – שלחו בשדה למטה את המספר האישי ודווחו לצוות התמיכה של המערכת.
+                            </li>
+                        </ul>
+                    </div>
+                </details>
+
+                <!-- EXPANDER 2: SEND DEBUG INFO -->
+                <details class="expander">
+                    <summary class="expander-summary">
+                        שליחת פרטי תקלה לצוות התמיכה
+                    </summary>
+
+                    <div class="expander-body">
+                        <p class="expander-lead">
+                            מלאו את המספר האישי ואת סוג הרשת שממנה התחברתם, ואנו נקבל יחד איתם את מזהה האירוע
+                            כדי לאתר את התקלה ביומני המערכת.
+                        </p>
+
+                        <form class="debug-form" action="#" method="post">
+
+                            <!-- USER ID -->
+                            <div class="debug-row">
+                                <label class="debug-label" for="debug-user-id">
+                                    <span class="debug-label-text">מספר אישי (User ID):</span>
+                                    <input id="debug-user-id" class="debug-input" type="text" name="user_id" required
+                                        autocomplete="off" placeholder="לדוגמה: s0000000">
+                                </label>
+                            </div>
+
+                            <!-- NETWORK -->
+                            <div class="debug-row">
+                                <label class="debug-label" for="debug-network">
+                                    <span class="debug-label-text">מאיזו רשת התחברתם?</span>
+                                    <select id="debug-network" class="debug-select" name="network" required>
+                                        <option value="" disabled selected>בחרו רשת...</option>
+                                        <option value="network1">pizza</option>
+                                        <option value="network2">sushi</option>
+                                        <option value="network3">pasta</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <!-- Hidden fields with technical context -->
+                            <input type="hidden" name="RequestID" value="{{ .RequestID }}">
+                            <input type="hidden" name="StatusCode" value="{{ .StatusCode }}">
+                            <input type="hidden" name="namespace" value="test">
+
+                            <div class="debug-actions">
+                                <button type="submit" class="debug-submit">
+                                    שליחת פרטי התקלה
+                                </button>
+                            </div>
+                        </form>
+
+                        <p class="hint">
+                            שימו לב: למלא רק מזהה משתמש ולבחור את סוג הרשת התואם למקום ממנו התחברתם.
+                        </p>
+                    </div>
+                </details>
+
+                <!-- EXPANDER 3: CONTACT INFO -->
+                <details class="expander">
+                    <summary class="expander-summary">
+                        פרטי יצירת קשר עם תמיכה
+                    </summary>
+
+                    <div class="expander-body">
+                        <p class="expander-lead">
+                            אם ביצעתם את השלבים ועדיין לא הצלחתם להתחבר, ניתן לפנות לצוות האחראי:
+                        </p>
+
+                        <dl class="contact-list">
+                            <div class="contact-row">
+                                <dt>שם המערכת</dt>
+                                <dd>Perimeter</dd>
+                            </div>
+
+                            <div class="contact-row">
+                                <dt>PO מערכת</dt>
+                                <dd>Dor Ravid</dd>
+                            </div>
+
+                            <div class="contact-row">
+                                <dt>טלפון בספיר</dt>
+                                <dd>500-4303</dd>
+                            </div>
+
+                            <div class="contact-row">
+                                <dt>משתמש בchat</dt>
+                                <dd>0.1.0</dd>
+                            </div>
+                        </dl>
+
+                        <p class="hint">
+                            מומלץ לפנות לצוות התמיכה רק לאחר ששלחתם את פרטי התקלה בשדה למעלה.
+                        </p>
+                    </div>
+                </details>
+
+            </section>
+
+            <!-- FOOTER -->
+            <footer class="error-footer">
+                <div class="footer-dot" aria-hidden="true"></div>
+                <p>תודה על הסבלנות.</p>
+            </footer>
+
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            const form = document.querySelector('.debug-form');
+            const toast = document.getElementById('toast');
+            if (!form || !toast) return;
+
+            const toastMsgEl = toast.querySelector('.toast-message');
+            let toastTimer = null;
+
+            function showToast(message, type) {
+                if (!toastMsgEl) return;
+                toastMsgEl.textContent = message;
+
+                toast.classList.remove('toast--success', 'toast--error', 'toast--visible');
+                toast.classList.add('toast--visible');
+                toast.classList.add(type === 'success' ? 'toast--success' : 'toast--error');
+
+                if (toastTimer) clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('toast--visible');
+                }, 4000);
+            }
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('.debug-submit');
+                const originalText = submitBtn ? submitBtn.textContent : '';
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = 'שולח...';
+                }
+
+                try {
+                    const formData = new FormData(form);
+                    const res = await fetch(form.action || '#', {
+                        method: form.method || 'POST',
+                        body: formData
+                    });
+
+                    if (res.ok) {
+                        showToast('פרטי התקלה נשלחו בהצלחה. תודה שעזרתם לנו לאתר את הבעיה.', 'success');
+                        form.reset();
+                    } else {
+                        showToast('לא הצלחנו לשלוח את פרטי התקלה. נסו שוב מאוחר יותר או פנו לצוות התמיכה.', 'error');
+                    }
+                } catch (err) {
+                    showToast('אירעה שגיאה בחיבור. נסו שוב.', 'error');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                }
+            });
+        })();
+    </script>
+
+</body>
+
+</html>

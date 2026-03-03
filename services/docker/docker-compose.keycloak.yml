@@ -18,6 +18,7 @@ services:
     container_name: keycloak
     command:
       - start-dev
+      - --features=scripts
       - --proxy-headers=xforwarded
       - --hostname-strict=false
       - --hostname-strict-https=false

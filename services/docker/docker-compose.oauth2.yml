@@ -7,6 +7,7 @@ services:
       - nginx
     command:
       - --provider=oidc
+      - --scope=openid roles email profile
       - --oidc-issuer-url=https://sso.docker.local/realms/portal
       - --client-id=portal
       - --code-challenge-method=S256
@@ -25,12 +26,16 @@ services:
       - --skip-auth-preflight=true
       - --skip-provider-button=true
       - --cookie-secure=true
-      - --cookie-refresh=5m
-      - --cookie-expire=10m
+      - --cookie-refresh=4m
+      - --cookie-expire=1h
       - --provider-ca-file=/etc/oauth2-proxy/certs/ca.crt
+      - --custom-templates-dir=/etc/oauth2-proxy/custom-templates
+      
+      - --footer="please contact!"
 
     volumes:
       - ../certs/ca:/etc/oauth2-proxy/certs:ro
+      - ../confs/oauth2-proxy/custom-templates:/etc/oauth2-proxy/custom-templates:ro
 
     networks:
       - tyk

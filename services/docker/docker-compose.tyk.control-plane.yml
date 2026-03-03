@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     env_file:
       - ../confs/tyk/control-plane/tyk.env
+    volumes:
+      - ../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
       - tyk
 
@@ -57,7 +59,7 @@ services:
 
   tyk-mongo:
     image: mongo:latest
-    container_name: tyk-control-plane-mongo
+    container_name: tyk-mongo
     command: ["mongod"]
     ports:
       - "27017:27017"

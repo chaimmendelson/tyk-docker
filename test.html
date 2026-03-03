@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>User Token Monitor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #1a1a1a;
+            font-family: Arial, sans-serif;
+            color: #ddd;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            color: #f0f0f0;
+        }
+
+        #controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+            background: #2a2a2a;
+            padding: 8px 12px;
+            border-radius: 6px;
+        }
+
+        #logBox {
+            flex: 1;
+            min-height: 0;
+            border: 2px solid #444;
+            background: #000;
+            color: #0f0;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: Consolas, monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            border-radius: 6px;
+        }
+
+        .timestamp {
+            color: #888;
+        }
+
+        .warn {
+            color: #ff9800;
+        }
+
+        .danger {
+            color: #ff3333;
+            font-weight: bold;
+        }
+
+        .debug {
+            color: #aaa;
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        input[type=number],
+        input[type=range],
+        input[type=time] {
+            cursor: pointer;
+        }
+
+        input[type=number] {
+            width: 50px;
+            padding: 3px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #303030;
+            color: #ddd;
+        }
+
+        input[type=range] {
+            width: 120px;
+        }
+
+        input[type=time] {
+            width: 95px;
+            padding: 3px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #303030;
+            color: #ddd;
+        }
+
+        input[type=checkbox] {
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        #countdownWrapper {
+            position: relative;
+            width: 50px;
+            height: 50px;
+        }
+
+        #countdownCircle {
+            transform: rotate(-90deg);
+        }
+
+        #countdownCircle circle {
+            fill: none;
+            stroke-width: 4;
+        }
+
+        #countdownCircle .bg {
+            stroke: #333;
+        }
+
+        #countdownCircle .progress {
+            stroke-linecap: round;
+            stroke: url(#rainbowGradient);
+            transition: stroke-dashoffset 0.1s linear;
+        }
+
+        #countdownText {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #eee;
+        }
+
+        #expiryCountdown {
+            font-weight: bold;
+            font-size: 14px;
+            padding: 4px 6px;
+            background: #111;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #444;
+            min-width: 70px;
+            color: #eee;
+        }
+
+        button {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            background: #222;
+            color: #ddd;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #444;
+        }
+
+        #sessionClock {
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 70px;
+            padding: 4px 6px;
+            background: #111;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #444;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Token Update Monitor</h2>
+
+    <div id="controls">
+        <div id="sessionClock">00:00:00</div>
+
+        <div class="input-group">
+            <label for="intervalRange">Interval:</label>
+            <input type="range" id="intervalRange" min="1" max="60" value="5">
+            <input type="number" id="intervalInput" min="1" max="60" value="5"> sec
+        </div>
+
+        <div id="countdownWrapper">
+            <svg id="countdownCircle" width="50" height="50">
+                <defs>
+                    <linearGradient id="rainbowGradient" gradientTransform="rotate(90)">
+                        <stop offset="0%" stop-color="#00ff00" />
+                        <stop offset="20%" stop-color="#ffff00" />
+                        <stop offset="40%" stop-color="#ff8000" />
+                        <stop offset="60%" stop-color="#ff0000" />
+                        <stop offset="80%" stop-color="#8000ff" />
+                        <stop offset="100%" stop-color="#00ff00" />
+                    </linearGradient>
+                </defs>
+                <circle class="bg" cx="25" cy="25" r="22"></circle>
+                <circle class="progress" cx="25" cy="25" r="22" stroke-dasharray="138.23" stroke-dashoffset="138.23">
+                </circle>
+            </svg>
+            <div id="countdownText">5</div>
+        </div>
+
+        <div id="expiryCountdown">00:00:00</div>
+
+        <div class="input-group">
+            <label for="refreshInput">Refresh:</label>
+            <input type="time" id="refreshInput" step="1" value="00:01:00">
+        </div>
+
+        <div class="input-group">
+            <label for="expireInput">Expire:</label>
+            <input type="time" id="expireInput" step="1" value="00:05:00">
+        </div>
+
+        <label><input type="checkbox" id="debugCheck"> Debug</label>
+        <button id="clearAll">Clear All Logs</button>
+        <button id="clearDebug">Clear Debug Logs</button>
+    </div>
+
+    <div id="logBox"></div>
+
+    <script type="module">
+        let lastIAT = null, lastEXP = null, animationFrame = null, lastRefresh = Date.now();
+
+        const logBox = document.getElementById('logBox');
+        const countdownText = document.getElementById('countdownText');
+        const progressCircle = document.querySelector('#countdownCircle .progress');
+        const sessionClock = document.getElementById('sessionClock');
+        const expiryCountdown = document.getElementById('expiryCountdown');
+        const intervalInput = document.getElementById('intervalInput');
+        const intervalRange = document.getElementById('intervalRange');
+        const refreshInput = document.getElementById('refreshInput');
+        const expireInput = document.getElementById('expireInput');
+
+        const radius = 22;
+        const circumference = 2 * Math.PI * radius;
+        progressCircle.style.strokeDasharray = circumference;
+        progressCircle.style.strokeDashoffset = circumference;
+
+        // Session clock
+        const sessionStart = Date.now();
+        setInterval(() => {
+            const diff = Math.floor((Date.now() - sessionStart) / 1000);
+            sessionClock.textContent = `${String(Math.floor(diff / 3600)).padStart(2, '0')}:${String(Math.floor((diff % 3600) / 60)).padStart(2, '0')}:${String(diff % 60).padStart(2, '0')}`;
+        }, 1000);
+
+        function timestamp() { return new Date().toLocaleTimeString(); }
+        function timeToSeconds(val) { const [h, m, s] = val.split(":").map(Number); return h * 3600 + m * 60 + s; }
+        function formatTime(seconds) { const h = Math.floor(seconds / 3600).toString().padStart(2, '0'); const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0'); const s = (seconds % 60).toString().padStart(2, '0'); return `${h}:${m}:${s}`; }
+
+        function log(msg, type = 'info') {
+            const line = type === 'debug' ? `<span class="debug">[${timestamp()}] ${msg}</span>` : `<span class="timestamp">[${timestamp()}]</span> ${msg}`;
+            logBox.innerHTML += line + '<br>';
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function updateExpiryCountdown() {
+            const expireSec = timeToSeconds(expireInput.value);
+            const elapsed = Math.floor((Date.now() - lastRefresh) / 1000);
+            const remaining = Math.max(expireSec - elapsed, 0);
+            let color = remaining < 60 ? '#ff3333' : remaining < 600 ? '#ff9800' : '#eee';
+            expiryCountdown.textContent = formatTime(remaining);
+            expiryCountdown.style.color = color;
+        }
+
+        async function checkToken() {
+            try {
+                const resp = await fetch('/userinfo', { headers: { 'Accept': 'application/json' } });
+                if (!resp.ok) { log("Request failed: " + resp.status); return; }
+                const data = await resp.json();
+                const iat = data.iat, exp = data.exp;
+                const debugEnabled = document.getElementById('debugCheck').checked;
+                if (lastIAT === null) { lastIAT = iat; lastEXP = exp; log(`Initial iat=${new Date(iat * 1000).toLocaleString()}`); }
+                else if (iat !== lastIAT || exp !== lastEXP) { lastIAT = iat; lastEXP = exp; lastRefresh = Date.now(); log(`⚠️ Token updated! New iat=${new Date(iat * 1000).toLocaleString()}`); }
+                else if (debugEnabled) { log(`Checked: no change (iat=${new Date(iat * 1000).toLocaleString()})`, 'debug'); }
+            } catch (e) { log("Error: " + e, 'danger'); }
+        }
+
+        async function triggerRefreshCheck() {
+            await checkToken();
+            updatePollingInterval();
+        }
+
+        function updatePollingInterval() {
+            const seconds = Number(intervalInput.value);
+            startCountdown(seconds);
+        }
+
+        function startCountdown(seconds) {
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            countdownText.textContent = seconds;
+            progressCircle.style.transition = "none";
+            progressCircle.style.strokeDashoffset = circumference;
+            const startTime = Date.now();
+
+            function animate() {
+                const elapsed = (Date.now() - startTime) / 1000;
+                const progress = Math.min(elapsed / seconds, 1);
+                const remaining = Math.max(seconds - elapsed, 0);
+                countdownText.textContent = Math.ceil(remaining);
+                progressCircle.style.strokeDashoffset = circumference * (1 - progress);
+                updateExpiryCountdown();
+
+                if (progress < 1) animationFrame = requestAnimationFrame(animate);
+                else triggerRefreshCheck();
+            }
+            animationFrame = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        intervalInput.addEventListener("input", () => { intervalInput.value = Math.max(1, Math.min(60, intervalInput.value)); intervalRange.value = intervalInput.value; updatePollingInterval(); });
+        intervalRange.addEventListener("input", () => { intervalInput.value = intervalRange.value; updatePollingInterval(); });
+        expireInput.addEventListener("change", updateExpiryCountdown);
+
+        document.getElementById('clearAll').addEventListener('click', async () => {
+            logBox.innerHTML = ''; lastIAT = null; lastEXP = null; await checkToken(); updatePollingInterval();
+        });
+        document.getElementById('clearDebug').addEventListener('click', () => {
+            document.querySelectorAll('.debug').forEach(el => { const br = el.nextSibling; if (br && br.nodeName === 'BR') br.remove(); el.remove(); });
+        });
+
+        setInterval(updateExpiryCountdown, 1000);
+        updatePollingInterval();
+        await checkToken();
+
+    </script>
+</body>
+
+</html>
