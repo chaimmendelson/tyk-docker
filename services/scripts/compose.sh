@@ -19,7 +19,8 @@ declare -A STACK_FILES=(
   [control-plane]="tyk-stack/control-plane/docker-compose.control-plane.yml"
   [data-plane]="tyk-stack/data-plane/docker-compose.data-plane.yml"
   [oauth2]="tyk-stack/oauth2/docker-compose.oauth2.yml"
-  [kong]="kong/docker-compose.kong.yml"
+  [kong-control-plane]="kong/control-plane/docker-compose.kong.control-plane.yml"
+  [kong-data-plane]="kong/data-plane/docker-compose.kong.data-plane.yml"
 )
 declare -A ENABLE_VARS=(
   [nginx]="ENABLE_NGINX"
@@ -27,7 +28,8 @@ declare -A ENABLE_VARS=(
   [control-plane]="ENABLE_CONTROL_PLANE"
   [data-plane]="ENABLE_DATA_PLANE"
   [oauth2]="ENABLE_OAUTH2"
-  [kong]="ENABLE_KONG"
+  [kong-control-plane]="ENABLE_KONG_CONTROL_PLANE"
+  [kong-data-plane]="ENABLE_KONG_DATA_PLANE"
 )
 
 set -a

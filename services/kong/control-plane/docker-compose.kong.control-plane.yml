@@ -25,6 +25,25 @@ services:
     networks:
       - api-gateway-env
 
+  # Generates the shared mTLS cert/key the control plane and every data
+  # plane use to authenticate the cluster connection. Written once into a
+  # volume both kong-stack/data-plane (external: true) and this file mount.
+  kong-cluster-cert:
+    image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
+    container_name: kong-cluster-cert
+    restart: on-failure
+    # The kong image runs as a non-root user by default, but a fresh named
+    # volume is created root-owned — need root here just to write the cert.
+    user: root
+    volumes:
+      - kong-cluster-cert:/cluster
+    # gen_cert (run as root, for volume-write access) leaves cluster.key
+    # root-only (0600) — kong-cp/kong-dp run as the non-root kong user, so
+    # loosen it or nginx fails to load the key with a permission error.
+    command: sh -c "cd /cluster && ( [ -f cluster.crt ] || kong hybrid gen_cert ) && chmod 644 cluster.crt cluster.key"
+    networks:
+      - api-gateway-env
+
   kong-bootstrap:
     image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
     container_name: kong-bootstrap
@@ -39,22 +58,52 @@ services:
     networks:
       - api-gateway-env
 
-  kong-gateway:
+  kong-migrations:
     image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
-    container_name: kong-gateway
+    container_name: kong-migrations
     restart: on-failure
     depends_on:
       kong-bootstrap:
         condition: service_completed_successfully
     environment:
       <<: *kong-env
+      KONG_PASSWORD: handyshake
+    # `up` alone is the first half of Kong's zero-downtime rolling-upgrade
+    # flow and leaves the DB in a "pending" state that never resolves without
+    # `finish`. This is a single-node dev stack, not a rolling upgrade, so
+    # run both phases together — safe to re-run: a no-op when nothing's
+    # pending, e.g. right after a fresh kong-bootstrap.
+    command: sh -c "kong migrations up && kong migrations finish"
+    networks:
+      - api-gateway-env
+
+  kong-cp:
+    image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
+    container_name: kong-cp
+    restart: on-failure
+    depends_on:
+      kong-migrations:
+        condition: service_completed_successfully
+      kong-cluster-cert:
+        condition: service_completed_successfully
+    environment:
+      <<: *kong-env
+      KONG_ROLE: control_plane
+      KONG_CLUSTER_MTLS: shared
+      KONG_CLUSTER_CERT: /cluster/cluster.crt
+      KONG_CLUSTER_CERT_KEY: /cluster/cluster.key
+      KONG_CLUSTER_LISTEN: 0.0.0.0:8005
+      KONG_CLUSTER_TELEMETRY_LISTEN: 0.0.0.0:8006
+      # A control plane node distributes config; it doesn't proxy traffic
+      # itself in hybrid mode — that's kong-stack/data-plane's job.
+      KONG_PROXY_LISTEN: "off"
       KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
       KONG_ADMIN_GUI_LISTEN: 0.0.0.0:8002, 0.0.0.0:8445 ssl
       KONG_ADMIN_GUI_URL: http://localhost:8002
       KONG_PASSWORD: handyshake
+    volumes:
+      - kong-cluster-cert:/cluster:ro
     ports:
-      - "8000:8000"
-      - "8443:8443"
       - "8001:8001"
       - "8444:8444"
       - "8002:8002"
@@ -65,3 +114,5 @@ services:
 volumes:
   kong-postgres-data:
     name: kong-postgres-data
+  kong-cluster-cert:
+    name: kong-cluster-cert

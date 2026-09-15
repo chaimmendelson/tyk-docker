@@ -1,0 +1,32 @@
+services:
+  kong-dp:
+    image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
+    container_name: kong-dp
+    restart: on-failure
+    environment:
+      KONG_ROLE: data_plane
+      KONG_DATABASE: "off"
+      KONG_CLUSTER_MTLS: shared
+      KONG_CLUSTER_CONTROL_PLANE: kong-cp:8005
+      KONG_CLUSTER_TELEMETRY_ENDPOINT: kong-cp:8006
+      KONG_CLUSTER_CERT: /cluster/cluster.crt
+      KONG_CLUSTER_CERT_KEY: /cluster/cluster.key
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8443 ssl
+      KONG_ADMIN_LISTEN: "off"
+      KONG_ADMIN_GUI_LISTEN: "off"
+      KONG_LICENSE_DATA: "${KONG_LICENSE_DATA}"
+    volumes:
+      - kong-cluster-cert:/cluster:ro
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+    networks:
+      - api-gateway-env
+
+volumes:
+  # Created by kong-stack/control-plane's kong-cluster-cert service — the
+  # control plane must have been started at least once before this stack
+  # can start (it needs the shared cluster cert to authenticate).
+  kong-cluster-cert:
+    name: kong-cluster-cert
+    external: true
