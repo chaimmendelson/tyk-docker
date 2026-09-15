@@ -6,9 +6,9 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ../confs/tyk/control-plane/gateway.conf
+      - tyk-stack/control-plane/confs/gateway.conf
     volumes:
-      - ../../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - ../ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
       - api-gateway-env
 
@@ -31,9 +31,9 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ../confs/tyk/control-plane/dashboard.conf
+      - tyk-stack/control-plane/confs/dashboard.conf
     volumes:
-      - ../../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - ../ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
       - api-gateway-env
 
@@ -43,9 +43,9 @@ services:
     environment:
       - TYK_MDCB_LICENSE=${MDCB_LICENSE:?License key missing from Docker environment file "".env" file.}
     env_file:
-      - ../confs/tyk/control-plane/mdcb.conf
+      - tyk-stack/control-plane/confs/mdcb.conf
     volumes:
-      - ../certs/nginx:/etc/mdcb/certs:ro
+      - ./nginx/certs:/etc/mdcb/certs:ro
     networks:
       - api-gateway-env
 

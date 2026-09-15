@@ -1,0 +1,67 @@
+x-kong-config: &kong-env
+  KONG_DATABASE: postgres
+  KONG_PG_HOST: kong-database
+  KONG_PG_DATABASE: kong
+  KONG_PG_USER: kong
+  KONG_PG_PASSWORD: kong
+  KONG_LICENSE_DATA: "${KONG_LICENSE_DATA}"
+
+services:
+  kong-database:
+    image: postgres:16
+    container_name: kong-database
+    restart: on-failure
+    environment:
+      POSTGRES_USER: kong
+      POSTGRES_DB: kong
+      POSTGRES_PASSWORD: kong
+    volumes:
+      - kong-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "kong"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    networks:
+      - api-gateway-env
+
+  kong-bootstrap:
+    image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
+    container_name: kong-bootstrap
+    restart: on-failure
+    depends_on:
+      kong-database:
+        condition: service_healthy
+    environment:
+      <<: *kong-env
+      KONG_PASSWORD: handyshake
+    command: kong migrations bootstrap
+    networks:
+      - api-gateway-env
+
+  kong-gateway:
+    image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
+    container_name: kong-gateway
+    restart: on-failure
+    depends_on:
+      kong-bootstrap:
+        condition: service_completed_successfully
+    environment:
+      <<: *kong-env
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8444 ssl
+      KONG_ADMIN_GUI_LISTEN: 0.0.0.0:8002, 0.0.0.0:8445 ssl
+      KONG_ADMIN_GUI_URL: http://localhost:8002
+      KONG_PASSWORD: handyshake
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+      - "8444:8444"
+      - "8002:8002"
+      - "8445:8445"
+    networks:
+      - api-gateway-env
+
+volumes:
+  kong-postgres-data:
+    name: kong-postgres-data

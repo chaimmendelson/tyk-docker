@@ -3,8 +3,6 @@ services:
     image: quay.io/oauth2-proxy/oauth2-proxy:v7.7.1
     container_name: oauth2-proxy
     restart: unless-stopped
-    depends_on:
-      - nginx
     command:
       - --provider=oidc
       - --scope=openid roles email profile
@@ -34,8 +32,8 @@ services:
       - --footer="please contact!"
 
     volumes:
-      - ../../certs/ca:/etc/oauth2-proxy/certs:ro
-      - ../confs/oauth2-proxy/custom-templates:/etc/oauth2-proxy/custom-templates:ro
+      - ../ca:/etc/oauth2-proxy/certs:ro
+      - ./tyk-stack/oauth2/confs/custom-templates:/etc/oauth2-proxy/custom-templates:ro
 
     networks:
       - api-gateway-env

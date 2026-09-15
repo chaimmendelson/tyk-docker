@@ -7,8 +7,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ../confs/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ../certs:/etc/nginx/certs:ro
-      - ../confs/domainNotFound.html:/usr/share/nginx/html/domainNotFound.html:ro
+      - ./nginx/confs/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/confs/domainNotFound.html:/usr/share/nginx/html/domainNotFound.html:ro
     networks:
       - api-gateway-env
