@@ -34,8 +34,8 @@ services:
       - --footer="please contact!"
 
     volumes:
-      - ../certs/ca:/etc/oauth2-proxy/certs:ro
+      - ../../certs/ca:/etc/oauth2-proxy/certs:ro
       - ../confs/oauth2-proxy/custom-templates:/etc/oauth2-proxy/custom-templates:ro
 
     networks:
-      - tyk
+      - api-gateway-env

@@ -6,11 +6,11 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - ../confs/tyk/control-plane/tyk.env
+      - ../confs/tyk/control-plane/gateway.conf
     volumes:
-      - ../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - ../../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
-      - tyk
+      - api-gateway-env
 
   tyk-redis:
     image: redis
@@ -20,7 +20,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - tyk
+      - api-gateway-env
 
   # ---------------- MongoDB override services ----------------
   tyk-dashboard:
@@ -31,11 +31,11 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - ../confs/tyk/control-plane/tyk_analytics.env
+      - ../confs/tyk/control-plane/dashboard.conf
     volumes:
-      - ../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
+      - ../../certs/ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
-      - tyk
+      - api-gateway-env
 
   tyk-mdcb:
     image: tykio/tyk-mdcb-docker:${MDCB_VERSION:-v2.5.1}
@@ -43,19 +43,11 @@ services:
     environment:
       - TYK_MDCB_LICENSE=${MDCB_LICENSE:?License key missing from Docker environment file "".env" file.}
     env_file:
-      - ../confs/tyk/control-plane/tyk_sync.env
+      - ../confs/tyk/control-plane/mdcb.conf
     volumes:
       - ../certs/nginx:/etc/mdcb/certs:ro
     networks:
-      - tyk
-
-  tyk-pump:
-    image: tykio/tyk-pump-docker-pub:${PUMP_VERSION:-v1.9.0}
-    container_name: tyk-control-plane-pump
-    env_file:
-      - ../confs/tyk/control-plane/pump.env
-    networks:
-      - tyk
+      - api-gateway-env
 
   tyk-mongo:
     image: mongo:latest
@@ -66,7 +58,7 @@ services:
     volumes:
       - mongo-data:/data/db
     networks:
-      - tyk
+      - api-gateway-env
 
 # ---------------- Volumes ----------------
 volumes:

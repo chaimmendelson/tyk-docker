@@ -4,9 +4,9 @@ services:
     image: tykio/tyk-gateway:${GATEWAY_VERSION:-v5.6.1}
     container_name: tyk-data-plane-gateway
     env_file:
-      - ../confs/tyk/data-plane/tyk.env
+      - ../confs/tyk/data-plane/gateway.conf
     networks:
-      - tyk
+      - api-gateway-env
 
   tyk-data-plane-redis:
     image: redis
@@ -16,7 +16,7 @@ services:
     volumes:
       - data-plane-redis-data:/data
     networks:
-      - tyk
+      - api-gateway-env
 
 
 # ---------------- Volumes ----------------

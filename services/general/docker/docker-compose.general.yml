@@ -1,6 +1,6 @@
 networks:
-  tyk:
-    name: tyk-docker-network
+  api-gateway-env:
+    name: api-gateway-env
     driver: bridge
     ipam:
       driver: default
