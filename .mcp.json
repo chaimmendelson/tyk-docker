@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "tyk-docs": {
+      "command": "/home/chaim/code/tyk-docker/mcps/docs/dist/tyk-docs-mcp"
+    }
+  }
+}

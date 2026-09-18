@@ -1,0 +1,21 @@
+{
+  "name": "tyk-docs-mcp-launcher",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Vendored dependencies for tyk-docs-mcp (air-gap ready: run build.sh once while online, then no network is needed to run it).",
+  "bin": "tyk-docs-mcp.js",
+  "dependencies": {
+    "@tyk-technologies/docs-mcp": "0.1.0-rc7"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "@yao-pkg/pkg": "6.22.0"
+  },
+  "pkg": {
+    "assets": [
+      "docs-mcp-bundle.cjs",
+      "node_modules/@buger/probe/bin/probe",
+      "node_modules/@tyk-technologies/docs-mcp/data/**/*"
+    ]
+  }
+}

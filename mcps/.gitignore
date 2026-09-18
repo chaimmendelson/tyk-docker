@@ -1,0 +1,6 @@
+node_modules/
+dist/
+
+# downloaded/built during build.sh, not source
+dashboard/assets/dashboard-swagger.yml
+docs/assets/docs-mcp-bundle.cjs
