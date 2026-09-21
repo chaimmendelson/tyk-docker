@@ -147,7 +147,7 @@ These categories describe the consumer and its identity model, rather than a spe
 
 C2B represents access where the consumer is a human user.
 
-The user should authenticate through the organization's Identity Provider (IdP).
+The user must authenticate through the organization's Identity Provider (IdP).
 
 The expected model is:
 
@@ -167,7 +167,7 @@ API Gateway
 Backend
 ```
 
-C2B access should use **short-lived access tokens** issued by the organization's IdP.
+C2B access must use **short-lived access tokens** issued by the organization's IdP.
 
 The lifetime of the access tokens is defined by the owner of the Identity Provider and is not defined here.
 
@@ -212,9 +212,9 @@ API Gateway
 Backend
 ```
 
-The long-lived client credential should not be used as the API access credential for every request.
+The long-lived client credential must not be used as the API access credential for every request.
 
-The preferred model is:
+The required model is:
 
 > **Use a client credential to obtain an access token, then use the access token for API access.**
 
@@ -439,7 +439,7 @@ Consumer A
     +-- API B: 20 req/s
 ```
 
-Rate limiting is a capability that can be enabled where appropriate.
+Rate limiting is a capability that can be enabled where appropriate. It is fully optional per API, and recommended where it can help protect the API or its backend.
 
 It does not necessarily need to be enabled for every API.
 
@@ -480,7 +480,7 @@ Transformation should be used for **technical compatibility**, not for implement
 
 Caching can be provided as an optional Gateway capability.
 
-Caching should be used only where it is safe and appropriate.
+Caching is fully optional per API. It should be used where it can help and where it is safe and appropriate.
 
 The Gateway should consider:
 
@@ -517,6 +517,8 @@ The Gateway may validate:
 Schema validation provides an additional layer of protection for backend services.
 
 However, it should not be used to implement business validation.
+
+Schema validation is fully optional per API, and recommended where it can help protect the backend.
 
 For example:
 
@@ -638,7 +640,9 @@ Git should serve as the **Source of Truth** for:
 * Policies
 * Gateway configuration
 * Version configuration
-* Consumer configuration where appropriate
+* Consumer configuration (consumer identity, entitlements to APIs and operations, and rate limits)
+
+Consumer credentials are never stored in Git.
 
 Direct manual changes to production Gateway configuration should be avoided.
 
@@ -682,7 +686,7 @@ Changes should be:
 4. Approved
 5. Automatically deployed
 
-Production should not depend on undocumented manual configuration.
+Production must not depend on undocumented manual configuration.
 
 The deployed state should be reproducible from the repository.
 
@@ -960,7 +964,7 @@ An exception should:
 
 * Have a documented reason
 * Have an identified owner
-* Have an appropriate approval
+* Have approval from the security managers
 * Include risk considerations
 * Have an expiration or review date where appropriate
 
@@ -1143,7 +1147,7 @@ The goal is to ensure that:
 | Secrets Storage        | Separate secure system     |
 | Vendor Neutrality      | Architectural principle    |
 
-"Required capability" means the platform must provide the capability; whether it is enabled for a given API is decided by the application team.
+"Required capability" means the platform must provide the capability; whether it is enabled for a given API is decided by the application team. Rate limiting, caching and schema validation are fully optional per API and recommended where they can help.
 
 ---
 
@@ -1221,9 +1225,9 @@ The enterprise API Gateway architecture is based on the following principles:
 3. **Application teams own their APIs.**
 4. **The infrastructure team owns the Gateway platform.**
 5. **Self-Service should be provided within organizational guardrails.**
-6. **C2B should use short-lived user access tokens issued by the organizational IdP.**
-7. **B2B should separate client credentials used for token acquisition from access tokens used for API access.**
-8. **Long-lived credentials should not be continuously transmitted across the network.**
+6. **C2B must use short-lived user access tokens issued by the organizational IdP.**
+7. **B2B must separate client credentials used for token acquisition from access tokens used for API access.**
+8. **Long-lived credentials must not be continuously transmitted across the network.**
 9. **Routing and version routing belong in the Gateway.**
 10. **Load balancing between backend instances remains a separate responsibility.**
 11. **Health checks are a required Gateway capability.**

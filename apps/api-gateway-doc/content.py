@@ -67,7 +67,7 @@ def CH(code, title, blocks, appendix=None, src=None):
 META = {
     "title": "API Gateway Enterprise Architecture Standard",
     "subtitle": "Architecture and Operating Model",
-    "version": "1.0",
+    "version": "1.2",
     "status": "Draft",
     "date": "21 September 2026",
     "date_iso": "2026-09-21",
@@ -87,6 +87,12 @@ REVISIONS = [
     {"version": "1.0", "date": "2026-09-21", "author": "[[Author]]",
      "desc": "First issue (draft). Converted from the architecture and operating-model notes "
              "(README.md); review decisions recorded."},
+    {"version": "1.1", "date": "2026-09-21", "author": "[[Author]]",
+     "desc": "Draft. Settles three open issues (all three optional capabilities stay "
+             "optional per API; consumer configuration in Git defined; Security Managers approve exceptions) "
+             "and makes the security core mandatory."},
+    {"version": "1.2", "date": "2026-09-21", "author": "[[Author]]",
+     "desc": "In preparation (draft). Summary of changes since 1.1 to be completed when issued."},
 ]
 
 # ---------------------------------------------------------------------------
@@ -187,6 +193,8 @@ CHAPTERS.append(CH("INT", "Introduction", [
          ["Load Balancer", "Infrastructure that distributes traffic between instances of a backend."],
          ["Management Plane", "The management layer used to configure and manage Gateways; also "
                               "referred to as the control plane or central management."],
+         ["Security Managers", "The team [[team name]] designated by the organization to approve "
+                               "exceptions to this document."],
          ["Site", "A location or environment in which applications run and in which a Gateway may be "
                   "deployed."],
          ["Source of truth", "The single authoritative location from which the deployed state is derived."],
@@ -297,7 +305,8 @@ CHAPTERS.append(CH("ROL", "Roles and Responsibilities", [
          ["Infrastructure Team", "Owns and operates the Platform; provides the capabilities and "
                                  "guardrails through which Application Teams manage their APIs."],
          ["Governance body", "Defines API standards and policies for the organization "
-                             "(see {sec:orggov})."]],
+                             "(see {sec:orggov})."],
+         ["Security Managers", "Approve exceptions to this document (see {sec:exceptions})."]],
         [4.2, 11.8]),
 
     H2("Responsibility matrix", "matrix", [4]),
@@ -348,8 +357,10 @@ CHAPTERS.append(CH("IAM", "Identity, Authentication and Authorization", [
 
     H2("C2B authentication", "c2b", [5]),
     P("C2B represents access where the consumer is a human user."),
-    R("C2B users should authenticate through the organization's Identity Provider."),
-    R("C2B access should use short-lived access tokens issued by the organization's Identity Provider."),
+    R("C2B users shall authenticate through the organization's Identity Provider.",
+      chg="README §5.1 said 'should'; made mandatory by a review decision (security core)."),
+    R("C2B access shall use short-lived access tokens issued by the organization's Identity Provider.",
+      chg="README §5.1 said 'should'; made mandatory by a review decision (security core)."),
     R("The Gateway shall validate the identity and the relevant claims presented by the consumer."),
     R("The Gateway may pass trusted identity information to the application, such as user ID, groups, "
       "roles, claims, scopes and other organizational identity attributes."),
@@ -364,12 +375,15 @@ CHAPTERS.append(CH("IAM", "Identity, Authentication and Authorization", [
       "avoids repeatedly sending long-lived credentials across the network. It therefore distinguishes "
       "between the client identity or credential used to obtain tokens, and the access token used to "
       "access APIs."),
-    R("B2B clients should use a client credential to obtain a short-lived access token, and then present "
-      "that access token for API access."),
-    R("The long-lived client credential should not be used as the API access credential for every request."),
-    R("Long-lived credentials should not be continuously transmitted across the network.",
-      chg="README §40 item 8 referred to 'long-lived access tokens'. Corrected to 'credentials' to align "
-          "with §6, which contrasts long-lived credentials with short-lived access tokens."),
+    R("B2B clients shall use a client credential to obtain a short-lived access token, and then present "
+      "that access token for API access.",
+      chg="README §6 called this 'the preferred model' ('should'); made mandatory by a review decision "
+          "(security core)."),
+    R("The long-lived client credential shall not be used as the API access credential for every request.",
+      chg="README §6 said 'should not'; made mandatory by a review decision (security core)."),
+    R("Long-lived credentials shall not be continuously transmitted across the network.",
+      chg="README §40 item 8 said 'should not' and referred to 'long-lived access tokens'. Corrected to "
+          "'credentials' to align with §6, and made mandatory by a review decision (security core)."),
     RAT("This model gives better control over credential exposure, token lifetime, revocation, "
         "rotation, auditing and authorization."),
     FIG("b2b", "fig_b2b.png", "B2B authentication and access flow",
@@ -475,8 +489,10 @@ CHAPTERS.append(CH("TRF", "Traffic Management", [
         [["Consumer A", "API A", "100 requests per second"],
          ["Consumer A", "API B", "20 requests per second"]],
         [5.0, 5.0, 6.0], first_bold=False),
-    R("Rate limiting may be enabled for an API where appropriate."),
-    NOTE("Rate limiting is not required to be enabled for every API."),
+    R("Rate limiting should be enabled for an API where it can help protect the API or its backend.",
+      chg="README §13 said it 'can be enabled where appropriate'. A review decision keeps it fully optional "
+          "per API and recommended where it can help."),
+    NOTE("Enabling rate limiting is optional. It is not required for every API."),
 ]))
 
 # 6 -------------------------------------------------------------------------
@@ -500,7 +516,10 @@ CHAPTERS.append(CH("POL", "API Policy Capabilities", [
     R("The Gateway shall provide caching as a capability.",
       chg="README §15 calls it 'an optional Gateway capability'; expressed as a capability the Platform "
           "shall provide (§38: 'Required capability'), enabled per API where appropriate."),
-    R("Caching should be used only where it is safe and appropriate."),
+    R("Caching should be used where it can help and where it is safe and appropriate.",
+      chg="README §15 said 'only where it is safe and appropriate'. A review decision keeps caching fully "
+          "optional per API and recommended where it can help."),
+    NOTE("Enabling caching is optional. It is not required for every API."),
     R("The caching configuration of an API should take the following into account:",
       bullets=["Cache TTL", "Cache key", "HTTP cache headers", "Authentication context",
                "Authorization context", "Data sensitivity", "Data freshness", "Cache invalidation"]),
@@ -517,6 +536,10 @@ CHAPTERS.append(CH("POL", "API Policy Capabilities", [
       bullets=["Request structure", "Response structure", "Required fields", "Data types",
                "Payload size", "API contract compliance"]),
     RAT("Schema validation provides an additional layer of protection for backend services."),
+    R("Schema validation should be enabled for an API where it can help protect its backend.",
+      chg="New requirement from a review decision: schema validation stays fully optional per API and is "
+          "recommended where it can help."),
+    NOTE("Enabling schema validation is optional. It is not required for every API."),
     R("Schema validation should not be used to implement business validation."),
     TBL("validation", "Technical validation versus business validation",
         ["Component", "Example of validation"],
@@ -572,8 +595,12 @@ CHAPTERS.append(CH("CFG", "Configuration Management", [
       chg="README §20 said 'should'; strengthened because §38 lists Git Integration as 'Required'."),
     R("Git shall serve as the source of truth for the following:",
       bullets=["API definitions", "Routes", "Policies", "Gateway configuration",
-               "Version configuration", "Consumer configuration where appropriate"],
-      chg="README §20 said 'should'; strengthened, together with the previous requirement."),
+               "Version configuration",
+               "Consumer configuration: consumer identity, entitlements (APIs and operations) and rate limits"],
+      chg="README §20 said 'should'; strengthened, together with the previous requirement. 'Consumer "
+          "configuration where appropriate' defined by a review decision as consumer identity, "
+          "entitlements and rate limits."),
+    NOTE("Consumer credentials are never held in Git. See {sec:secrets}."),
     R("Direct manual changes to production Gateway configuration should be avoided."),
     RAT("Using Git as the source of truth provides change history, review, auditability, rollback, "
         "reproducibility and consistency between environments."),
@@ -587,7 +614,8 @@ CHAPTERS.append(CH("CFG", "Configuration Management", [
         "approved and automatically deployed to the API Gateway. Secrets management supplies secrets "
         "to the Gateway at deployment. Git records what was requested and approved; Gateway audit "
         "records what was executed."),
-    R("Production should not depend on undocumented manual configuration."),
+    R("Production shall not depend on undocumented manual configuration.",
+      chg="README §21 said 'should not'; made mandatory by a review decision (security core)."),
     R("The deployed state should be reproducible from the repository."),
 
     H2("Secrets", "secrets", [22]),
@@ -743,8 +771,10 @@ CHAPTERS.append(CH("GOV", "Governance and Exceptions", [
     H2("Exceptions", "exceptions", [32]),
     R("The Platform should support a controlled exception mechanism."),
     R("An exception should have the following:",
-      bullets=["A documented reason.", "An identified owner.", "An appropriate approval.",
-               "Risk considerations.", "An expiration or review date where appropriate."]),
+      bullets=["A documented reason.", "An identified owner.", "Approval by the Security Managers.",
+               "Risk considerations.", "An expiration or review date where appropriate."],
+      chg="README §32 said 'an appropriate approval'; a review decision names the approver: the "
+          "Security Managers."),
     R("Exceptions should not become an alternative to proper architecture."),
 ]))
 
@@ -885,18 +915,10 @@ CHAPTERS.append(CH("APC", "Open Issues and Decisions Pending", [
       "so that they are resolved deliberately rather than by default."),
     TBL("openissues", "Open issues",
         ["ID", "Topic", "Decision or information required", "Related"],
-        [["OI-01", "Capability enablement",
-          "Confirm which capabilities are optional per API and which are mandatory guardrails for every "
-          "API (for example rate limiting, caching and schema validation).", "{sec:normative}"],
-         ["OI-02", "Requirement levels",
-          "Review the requirements expressed as 'should', for example token-based B2B access, GitOps and "
-          "the default retry position, to decide whether any should become 'shall'.", "{sec:normative}"],
-         ["OI-03", "Consumer configuration in Git",
-          "Define which consumer configuration is held in Git and which is managed at runtime.",
-          "{sec:git}"],
-         ["OI-04", "Governance body",
+        [["OI-01", "Governance body",
           "Define the organizational governance body, including its owner and mandate. Until then the "
-          "Infrastructure Team provides interim governance for the Platform.", "{sec:orggov}"]],
+          "Infrastructure Team provides interim governance for the Platform, and the Security Managers "
+          "approve exceptions.", "{sec:orggov}, {sec:exceptions}"]],
         [1.6, 3.4, 8.2, 2.8], first_bold=True),
 ], appendix="C"))
 
@@ -909,7 +931,8 @@ RESOLVED = [
     "**Required vs. optional.** README §13/§15/§16 called rate limiting, caching and schema validation "
     "optional, while §38 called them 'Required capability'. Resolved as: the Platform shall provide "
     "the capability; whether it is enabled for a given API is the Application Team's decision "
-    "(Section 1.4, Appendix A). Confirm in OI-01.",
+    "(Section 1.4, Appendix A). Confirmed during review: all three stay fully optional per API and are "
+    "recommended where they can help.",
     "**Credentials vs. tokens.** README §40 item 8 said long-lived 'access tokens' should not be "
     "transmitted; §6 makes the distinction between long-lived client credentials and short-lived "
     "access tokens. Corrected to 'credentials' (Section 4.3).",
@@ -930,7 +953,8 @@ NEW_CONTENT = [
     "Requirement identifiers (GW-AAA-NNN) and the requirements register (Appendix A.2).",
     "Section 3.1 Roles table (roles are described in the README only implicitly).",
     "The 99.9% availability informative note (approx. 43 minutes per 30-day month).",
-    "{ch:APC} Open issues and decisions pending (OI-01 to OI-04).",
+    "Security Managers role, defined as the team that approves exceptions ({sec:exceptions}).",
+    "{ch:APC} Open issues and decisions pending (OI-01).",
     "Requirements and notes added from review decisions (listed in the next section).",
 ]
 
@@ -954,7 +978,19 @@ DECISIONS = [
     ("Health checks beyond HTTP", "Read as: regular health checks apply to all API technologies, with no "
                                   "protocol-specific mechanism ({sec:health}, note). Please confirm this reading."),
     ("Anonymous APIs", "Not permitted (new requirement in {sec:consumers})."),
-    ("Governance body", "Not yet defined; recorded in {sec:orggov} and kept open as OI-04."),
+    ("Governance body", "Not yet defined; recorded in {sec:orggov} and kept open as OI-01."),
+    ("Exception approval", "Exceptions are approved by the Security Managers, a defined team ({sec:exceptions}). "
+                           "The team's name is a placeholder to fill in ({sec:defs})."),
+    ("Capability enablement", "Rate limiting, caching and schema validation stay fully optional per API and "
+                              "are recommended where they can help ({sec:ratelimit}, {sec:cache}, {sec:schema})."),
+    ("Consumer configuration in Git", "Git holds consumer identity, entitlements (APIs and operations) and "
+                                      "rate limits; credentials are never in Git ({sec:git}). Not answered: "
+                                      "whether consumers can also be created at runtime, for example through "
+                                      "the Developer Portal."),
+    ("Security core made mandatory", "C2B use of the IdP with short-lived tokens, the B2B token exchange, no "
+                                     "long-lived credential on every request, and no reliance on undocumented "
+                                     "manual production configuration are now 'shall' (see the change table "
+                                     "above). Other 'should' requirements are unchanged."),
     ("Scope gaps", "Read 'yes' as: WebSocket/streaming, east-west traffic, multi-tenancy and "
                    "non-production environments are in scope ({sec:scope}). Please confirm this reading."),
 ]

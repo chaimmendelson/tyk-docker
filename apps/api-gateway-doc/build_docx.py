@@ -683,7 +683,7 @@ def set_properties(doc):
     cp.title, cp.subject = C.META["title"], C.META["subtitle"]
     cp.author = cp.last_modified_by = ""
     cp.keywords = "API Gateway; architecture; operating model; standard"
-    cp.created = cp.modified = datetime(2026, 9, 21, 12, 0, 0)
+    cp.created = cp.modified = datetime.fromisoformat(C.META["date_iso"]).replace(hour=12)
     cp.comments = "Draft. Converted from README.md."
 
 
@@ -778,8 +778,9 @@ def write_changes():
          "- Descriptive statements in the README (for example 'The application remains responsible for…', "
          "'The Gateway validates…') are written as 'shall'.", "",
          "The requirements below differ from the README's wording, almost all of them by strengthening "
-         "'should' to 'shall'. Please confirm each, or downgrade it to 'should'. Open issue OI-02 asks for "
-         "a general review of 'should' versus 'shall'.", "",
+         "'should' to 'shall'. Please confirm each, or downgrade it to 'should'. The security-core "
+         "requirements (C2B/B2B tokens, no reliance on undocumented manual production configuration) were "
+         "made mandatory by a review decision; other 'should' requirements are unchanged.", "",
          "| Requirement | Section | Change |", "|---|---|---|"]
     for r in Nums.reqs:
         if r["chg"]:
@@ -802,7 +803,7 @@ def write_changes():
           "owner, author, effective date, review cycle, next review date, approver roles and names, and "
           "the two organizational references in Section 1.6.", "",
           "## Decisions the README does not make", "",
-          f"See {resolve('{ch:APC}')} of the document (OI-01 to OI-04).", ""]
+          f"See {resolve('{ch:APC}')} of the document (OI-01).", ""]
     with open(OUT_CHANGES, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
 
