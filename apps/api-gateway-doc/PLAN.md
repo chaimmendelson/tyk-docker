@@ -8,7 +8,7 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | Item | State |
 |---|---|
 | Version 1.0 built, schema-validated, archived in `versions/v1.0/`, committed (`c9af9d0`, branch `docs/api-gateway-standard-v1`) | Done |
-| Version 1.1 issued and archived in `versions/v1.1/`: three open issues settled (capability enablement, consumer configuration in Git, exception approval), security core made mandatory, README updated | Done |
+| Version 1.1 issued, archived in `versions/v1.1/` and committed (`029cf6d`): three open issues settled (capability enablement, consumer configuration in Git, exception approval), security core made mandatory, README updated | Done |
 | Version 1.2 started: version bumped, revision-history entry added. No content changes yet; not archived | In progress |
 | README updated with the review decisions | Done |
 | Visual check of the rendered pages | **Not done**: no Word or LibreOffice on this machine. Open the .docx in Word; press F9 (or answer "Yes" to the update prompt) so the contents and lists get page numbers |
@@ -16,7 +16,7 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | Requirements that differ from the README's wording (46 in 1.1, mostly "should" strengthened to "shall") | **Open**: the 34 strengthened in 1.0 still await confirmation; all are listed in `CHANGES.md` |
 | Two readings of terse answers (health checks beyond HTTP; scope gaps "yes"), and one unanswered question (can consumers be created at runtime?) | **Open**: see `CHANGES.md`, "Decisions taken during review" |
 | Name of the Security Managers team | **Open**: placeholder in the definitions table |
-| Versions 1.1 and 1.2 (sources, archive, PLAN) | Uncommitted on the branch above |
+| Version 1.2 changes | None yet (only the version bump, committed in `029cf6d`) |
 
 ## Files
 
@@ -44,7 +44,7 @@ To issue a new version (for example 1.1 or 2.0):
 2. Set `META["version"]` and append an entry to `REVISIONS` (date, author, summary). The revision history in the document is generated from it.
 3. Run the build with `--archive`. It refuses if that version already exists, and it updates `versions/INDEX.md`.
 
-Archived versions are kept as files, and the sources for each are in git: commit when a version is archived (1.0 is commit `c9af9d0`; 1.1 is not yet committed). Do not run `--archive` for 1.2 until its `REVISIONS` summary is written.
+Archived versions are kept as files, and the sources for each are in git: commit when a version is archived (1.0 is commit `c9af9d0`, 1.1 is `029cf6d`). Do not run `--archive` for 1.2 until its `REVISIONS` summary is written.
 
 ## Document structure
 
