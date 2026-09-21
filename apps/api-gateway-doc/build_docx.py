@@ -34,11 +34,6 @@ FONT, MONO = "Calibri", "Consolas"
 NAVY, BLUE, GRAY = RGBColor(0x1F, 0x38, 0x64), RGBColor(0x2F, 0x54, 0x96), RGBColor(0x59, 0x59, 0x59)
 NAVY_HEX, BLUE_HEX, LIGHT_HEX, GRID_HEX = "1F3864", "2F5496", "EAF0F9", "BFBFBF"
 TEXT_W_CM = 16.0
-REQ_INDENT_CM = 2.8
-KEYWORDS = re.compile(r"\b(shall not|shall|should not|should|may)\b")
-LEVELS = {"shall": "Mandatory", "shall not": "Mandatory", "should": "Recommended",
-          "should not": "Recommended", "may": "Optional"}
-
 PPR_ORDER = ["pStyle", "keepNext", "keepLines", "pageBreakBefore", "framePr", "widowControl", "numPr",
              "suppressLineNumbers", "pBdr", "shd", "tabs", "suppressAutoHyphens", "kinsoku", "wordWrap",
              "overflowPunct", "topLinePunct", "autoSpaceDE", "autoSpaceDN", "bidi", "adjustRightInd",
@@ -136,7 +131,7 @@ def get_or_add_style(doc, name, base="Normal"):
 
 class Nums:
     ch, sec, fig, tbl = {}, {}, {}, {}
-    toc, figlist, tbllist, reqs = [], [], [], []
+    toc, figlist, tbllist, changes = [], [], [], []
 
 
 def number_document():
@@ -155,27 +150,17 @@ def number_document():
         ch["label"], ch["prefix"] = label, prefix
         Nums.ch[ch["code"]] = label
         Nums.toc.append((1, ch["heading"]))
-        sec_i, cur_sec, req_i = 0, None, 0
+        sec_i, cur_sec = 0, None
         for b in ch["blocks"]:
             t = b["t"]
+            if b.get("chg"):
+                Nums.changes.append((cur_sec or f"{ch['label']} {ch['title']}", b["chg"]))
             if t == "h2":
                 sec_i += 1
                 b["num"] = f"{prefix}.{sec_i}"
                 cur_sec = f"{b['num']} {b['title']}"
                 Nums.sec[b["key"]] = f"Section {b['num']}"
                 Nums.toc.append((2, f"{b['num']}\t{b['title']}"))
-            elif t == "req":
-                req_i += 1
-                found = KEYWORDS.findall(b["text"])
-                if len(found) != 1:
-                    errors.append(f"{ch['code']} req {req_i}: expected one normative keyword, got {found}: "
-                                  f"{b['text'][:60]}")
-                    found = found or ["shall"]
-                b["id"] = f"GW-{ch['code']}-{req_i:03d}"
-                b["kw"] = found[0]
-                b["level"] = LEVELS[found[0]]
-                b["chapter"], b["section"] = ch, cur_sec or ch["title"]
-                Nums.reqs.append(b)
             elif t == "tbl":
                 tbl_n += 1
                 b["no"] = tbl_n
@@ -186,13 +171,6 @@ def number_document():
                 b["no"] = fig_n
                 Nums.fig[b["key"]] = f"Figure {fig_n}"
                 Nums.figlist.append(f"Figure {fig_n} — {b['caption']}")
-            elif t == "register":
-                for key, cap in (("reqsummary", "Requirements by chapter and level"),
-                                 ("register", "Requirements register")):
-                    tbl_n += 1
-                    Nums.tbl[key] = f"Table {tbl_n}"
-                    Nums.tbllist.append(f"Table {tbl_n} — {cap}")
-                b["no"] = tbl_n - 1
 
 
 REF = re.compile(r"\{(ch|sec|fig|tbl):(\w+)\}")
@@ -413,17 +391,6 @@ def setup_styles(doc):
     for cs in ppr.findall(qn("w:contextualSpacing")):    # template suppresses spacing between bullets
         ppr.remove(cs)
 
-    req = get_or_add_style(doc, "Requirement")
-    req.paragraph_format.left_indent, req.paragraph_format.first_line_indent = Cm(REQ_INDENT_CM), Cm(-REQ_INDENT_CM)
-    req.paragraph_format.tab_stops.add_tab_stop(Cm(REQ_INDENT_CM))
-    req.paragraph_format.space_after = Pt(5)
-    req.paragraph_format.keep_together = True
-
-    rat = get_or_add_style(doc, "Rationale")
-    set_style_font(rat, FONT, 10, color=RGBColor(0x40, 0x40, 0x40))
-    rat.paragraph_format.left_indent = Cm(REQ_INDENT_CM)
-    rat.paragraph_format.space_after = Pt(6)
-
     note = get_or_add_style(doc, "Note")
     note.paragraph_format.space_before, note.paragraph_format.space_after = Pt(4), Pt(8)
     note.paragraph_format.left_indent = Cm(0.3)
@@ -573,18 +540,6 @@ def build_contents(doc):
 # Body
 # ---------------------------------------------------------------------------
 
-def render_req(doc, b):
-    p = doc.add_paragraph(style="Requirement")
-    p.paragraph_format.keep_with_next = bool(b["bullets"])
-    idrun = p.add_run(b["id"])
-    idrun.font.bold, idrun.font.size, idrun.font.color.rgb = True, Pt(9.5), NAVY
-    p.add_run("\t")
-    text = KEYWORDS.sub(lambda m: f"**{m.group(1)}**", b["text"], count=1)
-    add_inline(p, text)
-    for i, item in enumerate(b["bullets"]):
-        add_bullet(doc, item, REQ_INDENT_CM + 0.6, 0.5, keep_next=(i < len(b["bullets"]) - 1))
-
-
 def render_picture(doc, b):
     path = os.path.join(figures.OUT_DIR, b["image"])
     p = doc.add_paragraph()
@@ -600,24 +555,6 @@ def render_picture(doc, b):
     cp = caption(doc, "Figure", b["no"], b["caption"], keep_next=False)
     cp.alignment = WD_ALIGN_PARAGRAPH.CENTER
     cp.paragraph_format.space_after = Pt(10)
-
-
-def render_register(doc, b):
-    reqs = [r for r in Nums.reqs]
-    caption(doc, "Table", b["no"], "Requirements by chapter and level", keep_next=True)
-    rows, totals = [], [0, 0, 0]
-    for ch in [c for c in C.CHAPTERS if not c["appendix"]]:
-        cr = [r for r in reqs if r["chapter"] is ch]
-        counts = [sum(1 for r in cr if r["level"] == lv) for lv in ("Mandatory", "Recommended", "Optional")]
-        totals = [a + b_ for a, b_ in zip(totals, counts)]
-        rows.append([f"{ch['prefix']}  {ch['title']}", *map(str, counts), str(sum(counts))])
-    rows.append(["**Total**", *(f"**{t}**" for t in totals), f"**{sum(totals)}**"])
-    add_table(doc, ["Chapter", "Mandatory", "Recommended", "Optional", "Total"], rows,
-              [7.2, 2.2, 2.6, 2.0, 2.0], first_bold=False)
-    doc.add_paragraph()
-    caption(doc, "Table", b["no"] + 1, "Requirements register", keep_next=True)
-    add_table(doc, ["ID", "Section", "Level"],
-              [[r["id"], r["section"], r["level"]] for r in reqs], [3.2, 9.4, 3.4], first_bold=True)
 
 
 def build_body(doc):
@@ -637,13 +574,6 @@ def build_body(doc):
                 hp.add_run(f"{b['num']}\t{b['title']}")
             elif t == "p":
                 add_inline(doc.add_paragraph(), b["text"])
-            elif t == "req":
-                render_req(doc, b)
-            elif t == "rat":
-                p = doc.add_paragraph(style="Rationale")
-                lead = p.add_run("Rationale. ")
-                lead.font.bold = True
-                add_inline(p, b["text"])
             elif t == "note":
                 p = doc.add_paragraph(style="Note")
                 if not b["text"].startswith("**"):
@@ -658,8 +588,6 @@ def build_body(doc):
                 doc.add_paragraph().paragraph_format.space_after = Pt(2)
             elif t == "fig":
                 render_picture(doc, b)
-            elif t == "register":
-                render_register(doc, b)
 
 
 # ---------------------------------------------------------------------------
@@ -770,21 +698,24 @@ def write_changes():
     L = [f"# Change log: README.md → API Gateway Enterprise Architecture Standard (version {C.META['version']})", "",
          "Generated by `build_docx.py`. Review this file first: it lists every place where the rewrite "
          "changed meaning, not only wording.", "",
-         "## Requirement levels (modality rule)", "",
-         "- **shall / shall not** ← README *must*, *required*, *mandatory*, *not permitted*, and items marked "
+         "## How the wording was converted", "",
+         "From version 1.2 the document is continuous prose, without numbered requirements. Obligations "
+         "are carried by the wording of the sentence:", "",
+         "- **must / must not** ← README *must*, *required*, *mandatory*, *not permitted*, and items marked "
          "'Required' or 'separate' in the README capability summary (§38).",
-         "- **should / should not** ← README *should* where it expresses a preference or recommendation.",
-         "- **may** ← README *can*, *may*, *optional*.",
-         "- Descriptive statements in the README (for example 'The application remains responsible for…', "
-         "'The Gateway validates…') are written as 'shall'.", "",
-         "The requirements below differ from the README's wording, almost all of them by strengthening "
-         "'should' to 'shall'. Please confirm each, or downgrade it to 'should'. The security-core "
-         "requirements (C2B/B2B tokens, no reliance on undocumented manual production configuration) were "
-         "made mandatory by a review decision; other 'should' requirements are unchanged.", "",
-         "| Requirement | Section | Change |", "|---|---|---|"]
-    for r in Nums.reqs:
-        if r["chg"]:
-            L.append(f"| {r['id']} | {r['section']} | {resolve(r['chg'])} |")
+         "- **should / is recommended** ← README *should* where it expresses a preference or recommendation.",
+         "- **can / may** ← README *can*, *may*, *optional*.",
+         "- **Present tense** ← descriptive statements in the README (for example 'The application remains "
+         "responsible for…', 'The Gateway validates…'), which set out how the platform is required to operate.", "",
+         "Versions 1.0 and 1.1 (in `versions/`) use numbered requirements with *shall*, *should* and *may*.", "",
+         "## Places where the meaning differs from the README", "",
+         "Almost all are a README 'should' strengthened to 'must' or to the present tense. Please confirm "
+         "each, or downgrade it to 'should'. The security-core rules (C2B/B2B tokens, no reliance on "
+         "undocumented manual production configuration) were made mandatory by a review decision; other "
+         "'should' statements are unchanged.", "",
+         "| Section | Change |", "|---|---|"]
+    for section, chg in Nums.changes:
+        L.append(f"| {section} | {resolve(chg)} |")
     L += ["", "## Inconsistencies in the README and how they were resolved", ""]
     L += [f"{i}. {resolve(t)}" for i, t in enumerate(C.RESOLVED, 1)]
     L += ["", "## New content (not in the README)", ""] + [f"- {resolve(t)}" for t in C.NEW_CONTENT]
@@ -869,16 +800,18 @@ def verify():
         elif p.style.name == "Heading 2" and not seen_h1:
             problems.append(f"H2 before any H1: {p.text}")
 
-    # requirement ids: unique, sequential per chapter, register complete
-    ids = [p.text.split("\t")[0] for p in doc.paragraphs if p.style.name == "Requirement"]
-    if len(ids) != len(set(ids)):
-        problems.append("duplicate requirement IDs")
-    if len(ids) != len(Nums.reqs):
-        problems.append(f"requirement paragraphs {len(ids)} != requirements {len(Nums.reqs)}")
-    reg_ids = {row.cells[0].text for t in doc.tables for row in t.rows if row.cells[0].text.startswith("GW-")
-               and len(t.columns) == 3 and t.rows[0].cells[0].text == "ID"}
-    if reg_ids != set(ids):
-        problems.append("requirements register does not match the body")
+    # wording: prose document, no numbered requirements, no 'shall'
+    body_text = " ".join(p.text for p in doc.paragraphs)
+    for t in doc.tables:
+        for row in t.rows:
+            for cell in row.cells:
+                body_text += " " + cell.text
+    if re.search(r"\bshall\b", body_text, re.I):
+        problems.append("the word 'shall' is still used")
+    if re.search(r"\bGW-[A-Z]+-\d+", body_text):
+        problems.append("requirement identifiers are still present")
+    words = len(body_text.split())
+    modals = {w: len(re.findall(rf"\b{w}\b", body_text)) for w in ("must", "should", "may", "can")}
 
     # figures: alt text and caption; tables: caption count
     pics = doc.element.body.xpath(".//wp:docPr")
@@ -919,7 +852,7 @@ def verify():
         problems.append(f"README sections not covered: {sorted(set(range(1, 41)) - mapped)}")
 
     print(f"paragraphs={len(doc.paragraphs)} tables={len(doc.tables)} figures={len(pics)} "
-          f"requirements={len(ids)} sections={len(doc.sections)}")
+          f"sections={len(doc.sections)} words={words} modal verbs={modals}")
     if not C.REVISIONS or C.REVISIONS[-1]["version"] != C.META["version"]:
         problems.append("META version does not match the latest REVISIONS entry")
     if problems:

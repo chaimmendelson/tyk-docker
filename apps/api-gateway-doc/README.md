@@ -2,7 +2,7 @@
 
 > **Status:** source notes for the official document, current as of version 1.0 (2026-09-21).
 > The official document is `API_Gateway_Enterprise_Architecture_Standard.docx`; every issued version is in `versions/`.
-> Where the two differ (requirement levels, merged sections, new requirement IDs), see `CHANGES.md`.
+> Where the two differ (wording, merged sections), see `CHANGES.md`.
 
 ## 1. Purpose
 
