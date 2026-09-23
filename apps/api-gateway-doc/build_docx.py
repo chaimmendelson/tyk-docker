@@ -2,9 +2,12 @@
 
     ../.venv/bin/python build_docx.py             # build the working copy
     ../.venv/bin/python build_docx.py --archive   # ...and archive it as versions/v<version>/
+    ../.venv/bin/python build_docx.py --lang he   # Hebrew (right-to-left) edition, from content_he.py
 
-Inputs : content.py (the document as data), figures.py (diagrams)
+Inputs : content.py (the document as data), content_he.py (its Hebrew translation), figures.py (diagrams)
 Outputs: API_Gateway_Enterprise_Architecture_Standard.docx, CHANGES.md
+         API_Gateway_Enterprise_Architecture_Standard_he.docx (Hebrew; no CHANGES.md, not archived)
+Options: --out PATH   write the .docx there instead (used for regression checks)
 """
 import os
 import re
@@ -24,6 +27,8 @@ from docx.shared import Cm, Pt, RGBColor
 
 import content as C
 import figures
+
+C_EN = C        # the English content stays available as the reference structure for translations
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT_DOCX = os.path.join(HERE, "API_Gateway_Enterprise_Architecture_Standard.docx")
@@ -48,6 +53,50 @@ SECTPR_ORDER = ["headerReference", "footerReference", "footnotePr", "endnotePr",
                 "titlePg", "textDirection", "bidi", "rtlGutter", "docGrid", "printerSettings"]
 
 errors = []
+
+LANG, RTL = "en", False
+HEBREW = re.compile(r"[\u0590-\u05FF]")
+
+# Wording that is not in content.py: labels, headings and fixed phrases, per language.
+STR = {
+    "en": dict(
+        font="Calibri", chapter="Chapter", appendix="Appendix", section="Section", figure="Figure",
+        table="Table", contents="Contents", list_figures="List of Figures", list_tables="List of Tables",
+        doc_control="Document Control", revision_history="Revision History", approval="Approval",
+        note="Note. ", version="Version", status="Status", date="Date", doc_id="Document ID",
+        classification="Classification", doc_title="Document title", owner="Document owner",
+        author="Author", effective="Effective date", review_cycle="Review cycle",
+        next_review="Next review date", rev_headers=["Version", "Date", "Author", "Description"],
+        appr_headers=["Role", "Name", "Signature", "Date"], role="[[Role]]", name="[[Name]]",
+        footer_version="Version {v} — {status}", page="Page", of=" of ",
+        keywords="API Gateway; architecture; operating model; standard",
+        comments="Draft. Converted from README.md.", appendix_letters={}),
+    "he": dict(
+        font="Arial", chapter="פרק", appendix="נספח", section="סעיף", figure="איור", table="טבלה",
+        contents="תוכן עניינים", list_figures="רשימת איורים", list_tables="רשימת טבלאות",
+        doc_control="בקרת מסמך", revision_history="היסטוריית גרסאות", approval="אישור",
+        note="הערה. ", version="גרסה", status="סטטוס", date="תאריך", doc_id="מזהה מסמך",
+        classification="סיווג", doc_title="שם המסמך", owner="בעל המסמך", author="מחבר",
+        effective="תאריך כניסה לתוקף", review_cycle="מחזור סקירה", next_review="תאריך הסקירה הבאה",
+        rev_headers=["גרסה", "תאריך", "מחבר", "תיאור"], appr_headers=["תפקיד", "שם", "חתימה", "תאריך"],
+        role="[[תפקיד]]", name="[[שם]]", footer_version="גרסה {v} — {status}", page="עמוד", of=" מתוך ",
+        keywords="API Gateway; ארכיטקטורה; מודל תפעולי; תקן",
+        comments="טיוטה. תרגום לעברית של גרסה 1.3.",
+        appendix_letters={"A": "א׳", "B": "ב׳", "C": "ג׳"}),
+}
+T = STR["en"]
+
+
+def select_language(lang):
+    """Switch the build to another language edition (module-level state, set once per run)."""
+    global LANG, RTL, FONT, T, C, OUT_DOCX
+    LANG, RTL, T = lang, lang == "he", STR[lang]
+    FONT = T["font"]
+    figures.configure(lang)
+    if lang == "he":
+        import content_he
+        C = content_he
+        OUT_DOCX = os.path.join(HERE, "API_Gateway_Enterprise_Architecture_Standard_he.docx")
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +144,8 @@ def para_shade(pPr, fill):
     insert_ordered(pPr, el("w:shd", val="clear", color="auto", fill=fill), PPR_ORDER)
 
 
-def set_style_font(style, name=FONT, size=None, bold=None, italic=None, color=None):
+def set_style_font(style, name=None, size=None, bold=None, italic=None, color=None):
+    name = name or FONT
     style.font.name = name
     rpr = style.element.get_or_add_rPr()
     rfonts = rpr.get_or_add_rFonts()
@@ -139,12 +189,12 @@ def number_document():
     tbl_n = fig_n = 0
     for ch in C.CHAPTERS:
         if ch["appendix"]:
-            label = f"Appendix {ch['appendix']}"
+            label = f"{T['appendix']} {T['appendix_letters'].get(ch['appendix'], ch['appendix'])}"
             prefix = ch["appendix"]
             ch["heading"] = f"{label} — {ch['title']}"
         else:
             n += 1
-            label = f"Chapter {n}"
+            label = f"{T['chapter']} {n}"
             prefix = str(n)
             ch["heading"] = f"{n}\t{ch['title']}"
         ch["label"], ch["prefix"] = label, prefix
@@ -159,18 +209,18 @@ def number_document():
                 sec_i += 1
                 b["num"] = f"{prefix}.{sec_i}"
                 cur_sec = f"{b['num']} {b['title']}"
-                Nums.sec[b["key"]] = f"Section {b['num']}"
+                Nums.sec[b["key"]] = f"{T['section']} {b['num']}"
                 Nums.toc.append((2, f"{b['num']}\t{b['title']}"))
             elif t == "tbl":
                 tbl_n += 1
                 b["no"] = tbl_n
-                Nums.tbl[b["key"]] = f"Table {tbl_n}"
-                Nums.tbllist.append(f"Table {tbl_n} — {b['caption']}")
+                Nums.tbl[b["key"]] = f"{T['table']} {tbl_n}"
+                Nums.tbllist.append(f"{T['table']} {tbl_n} — {b['caption']}")
             elif t == "fig":
                 fig_n += 1
                 b["no"] = fig_n
-                Nums.fig[b["key"]] = f"Figure {fig_n}"
-                Nums.figlist.append(f"Figure {fig_n} — {b['caption']}")
+                Nums.fig[b["key"]] = f"{T['figure']} {fig_n}"
+                Nums.figlist.append(f"{T['figure']} {fig_n} — {b['caption']}")
 
 
 REF = re.compile(r"\{(ch|sec|fig|tbl):(\w+)\}")
@@ -184,7 +234,7 @@ def resolve(s):
             errors.append(f"unresolved reference {m.group(0)}")
             return m.group(0)
         return table[key]
-    return REF.sub(rep, s).replace(", Section ", ", ")
+    return REF.sub(rep, s).replace(f", {T['section']} ", ", ")
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +242,17 @@ def resolve(s):
 # ---------------------------------------------------------------------------
 
 TOKEN = re.compile(r"(\*\*.+?\*\*|\*[^*\s][^*]*?\*|`[^`]+`|\[\[.+?\]\])")
+PREFIX_HYPHEN = re.compile(r"(?<=[\u05D0-\u05EA])-(?=[A-Za-z0-9])")      # Hebrew prefix + hyphen + Latin word
+
+
+def add_rtl_text(run, text):
+    """Text of a Hebrew run. A prefix joined to a Latin word (ה-Gateway) gets a non-breaking hyphen, so
+    that a line break cannot leave the prefix stranded at the end of a line."""
+    for i, seg in enumerate(PREFIX_HYPHEN.split(text)):
+        if i:
+            run._r.append(OxmlElement("w:noBreakHyphen"))
+        if seg:
+            run.add_text(seg)
 
 
 def add_inline(par, text, size=None, bold=None, color=None):
@@ -208,7 +269,11 @@ def add_inline(par, text, size=None, bold=None, color=None):
             tok, run_kw["mono"] = tok[1:-1], True
         elif tok.startswith("[[") and tok.endswith("]]"):
             tok, run_kw["hl"] = "[" + tok[2:-2] + "]", True
-        run = par.add_run(tok)
+        if RTL and "\t" not in tok and "\n" not in tok:
+            run = par.add_run()
+            add_rtl_text(run, tok)
+        else:
+            run = par.add_run(tok)
         if size:
             run.font.size = Pt(size)
         if bold or run_kw.get("bold"):
@@ -311,9 +376,12 @@ def add_table(doc, headers, rows, widths, first_bold=True):
     ncols = len(widths)
     body_rows = len(rows)
     tbl = doc.add_table(rows=body_rows + (1 if headers else 0), cols=ncols)
-    tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
+    if not RTL:                                        # RTL tables start at the right margin by default
+        tbl.alignment = WD_TABLE_ALIGNMENT.LEFT
     tbl.autofit = False
     tblPr = tbl._tbl.tblPr
+    if RTL:
+        insert_ordered(tblPr, el("w:bidiVisual"), TBLPR_ORDER)   # first column on the right
     total = int(sum(widths) * 567)
     insert_ordered(tblPr, el("w:tblW", w=total, type="dxa"), TBLPR_ORDER)
     borders = el("w:tblBorders")
@@ -339,6 +407,9 @@ def add_table(doc, headers, rows, widths, first_bold=True):
             cell.width = Cm(widths[ci])
             fill_cell(cell, val, header=is_head, bold=(ci == 0 and first_bold and not is_head))
             if is_head:
+                if RTL:
+                    for par in cell.paragraphs:
+                        par.paragraph_format.keep_with_next = True
                 set_cell_shade(cell, NAVY_HEX)
             elif ci == 0 and first_bold:
                 set_cell_shade(cell, "F2F5FA")
@@ -348,7 +419,7 @@ def add_table(doc, headers, rows, widths, first_bold=True):
 def caption(doc, kind, no, text, keep_next):
     p = doc.add_paragraph(style="Caption")
     p.paragraph_format.keep_with_next = keep_next
-    p.add_run(f"{kind} ")
+    p.add_run(f"{T[kind.lower()]} ")                  # visible label; the SEQ identifier stays "Figure"/"Table"
     add_field(p, f"SEQ {kind} \\* ARABIC", str(no))
     add_inline(p, f" — {text}")
     return p
@@ -396,7 +467,7 @@ def setup_styles(doc):
     note.paragraph_format.left_indent = Cm(0.3)
     note.paragraph_format.keep_together = True
     pPr = note.element.get_or_add_pPr()
-    para_border(pPr, "left", BLUE_HEX, 24, space=6)
+    para_border(pPr, "right" if RTL else "left", BLUE_HEX, 24, space=6)   # bar on the start side
     para_shade(pPr, LIGHT_HEX)
 
     tt = get_or_add_style(doc, "Table Text")
@@ -432,7 +503,11 @@ def setup_styles(doc):
         s.paragraph_format.tab_stops.add_tab_stop(Cm(TEXT_W_CM), WD_TAB_ALIGNMENT.RIGHT)
     # document language
     rpr = normal.element.get_or_add_rPr()
-    rpr.append(el("w:lang", val="en-GB", eastAsia="en-GB"))
+    if RTL:
+        rpr.append(el("w:lang", val="he-IL", eastAsia="he-IL", bidi="he-IL"))
+        insert_ordered(normal.element.get_or_add_pPr(), el("w:bidi"), PPR_ORDER)   # all styles inherit it
+    else:
+        rpr.append(el("w:lang", val="en-GB", eastAsia="en-GB"))
 
 
 def setup_page(doc):
@@ -458,11 +533,11 @@ def fill_header_footer(sec0, sec1):
         if sec is sec1:
             sec.footer.is_linked_to_previous = False
         fp = sec.footer.paragraphs[0]
-        tabbed_paragraph(fp, f"Version {C.META['version']} — {C.META['status']}")
-        fp.add_run("Page ")
+        tabbed_paragraph(fp, T["footer_version"].format(v=C.META["version"], status=C.META["status"]))
+        fp.add_run(T["page"] + " ")
         add_field(fp, "PAGE", "1")
         if total:
-            fp.add_run(" of ")
+            fp.add_run(T["of"])
             add_field(fp, "SECTIONPAGES", "1")
         para_border(fp._p.get_or_add_pPr(), "top", GRID_HEX, 4, space=4)
 
@@ -498,41 +573,41 @@ def build_cover(doc):
     p.paragraph_format.space_before, p.paragraph_format.space_after = Pt(10), Pt(80)
     add_inline(p, meta["subtitle"], size=16, color=GRAY)
     add_table(doc, None,
-              [["Version", f"{meta['version']}"], ["Status", meta["status"]], ["Date", meta["date"]],
-               ["Document ID", meta["doc_id"]], ["Classification", meta["classification"]]],
+              [[T["version"], f"{meta['version']}"], [T["status"], meta["status"]], [T["date"], meta["date"]],
+               [T["doc_id"], meta["doc_id"]], [T["classification"], meta["classification"]]],
               [4.0, 8.0])
     doc.add_page_break()
 
 
 def build_document_control(doc):
     meta = C.META
-    doc.add_paragraph("Document Control", style="Front Heading")
+    doc.add_paragraph(T["doc_control"], style="Front Heading")
     add_table(doc, None,
-              [["Document title", meta["title"]], ["Document ID", meta["doc_id"]],
-               ["Version", meta["version"]], ["Status", meta["status"]],
-               ["Classification", meta["classification"]], ["Document owner", meta["owner"]],
-               ["Author", meta["author"]], ["Effective date", meta["effective"]],
-               ["Review cycle", meta["review_cycle"]], ["Next review date", meta["next_review"]]],
+              [[T["doc_title"], meta["title"]], [T["doc_id"], meta["doc_id"]],
+               [T["version"], meta["version"]], [T["status"], meta["status"]],
+               [T["classification"], meta["classification"]], [T["owner"], meta["owner"]],
+               [T["author"], meta["author"]], [T["effective"], meta["effective"]],
+               [T["review_cycle"], meta["review_cycle"]], [T["next_review"], meta["next_review"]]],
               [4.6, 11.4])
-    doc.add_paragraph("Revision History", style="Front Subheading")
-    add_table(doc, ["Version", "Date", "Author", "Description"],
+    doc.add_paragraph(T["revision_history"], style="Front Subheading")
+    add_table(doc, T["rev_headers"],
               [[r["version"], r["date"], r["author"], r["desc"]] for r in reversed(C.REVISIONS)],
               [2.2, 2.8, 3.6, 7.4], first_bold=False)
-    doc.add_paragraph("Approval", style="Front Subheading")
-    add_table(doc, ["Role", "Name", "Signature", "Date"],
-              [["[[Role]]", "[[Name]]", "", ""], ["[[Role]]", "[[Name]]", "", ""],
-               ["[[Role]]", "[[Name]]", "", ""]],
+    doc.add_paragraph(T["approval"], style="Front Subheading")
+    add_table(doc, T["appr_headers"],
+              [[T["role"], T["name"], "", ""], [T["role"], T["name"], "", ""],
+               [T["role"], T["name"], "", ""]],
               [4.6, 4.6, 4.0, 2.8], first_bold=False)
     doc.add_page_break()
 
 
 def build_contents(doc):
-    doc.add_paragraph("Contents", style="Front Heading")
+    doc.add_paragraph(T["contents"], style="Front Heading")
     add_field_block(doc, 'TOC \\o "1-2" \\h \\z \\u',
                     [(f"toc {lvl}", text) for lvl, text in Nums.toc])
-    doc.add_paragraph("List of Figures", style="Front Subheading").paragraph_format.page_break_before = True
+    doc.add_paragraph(T["list_figures"], style="Front Subheading").paragraph_format.page_break_before = True
     add_field_block(doc, 'TOC \\h \\z \\c "Figure"', [("table of figures", t) for t in Nums.figlist])
-    doc.add_paragraph("List of Tables", style="Front Subheading")
+    doc.add_paragraph(T["list_tables"], style="Front Subheading")
     add_field_block(doc, 'TOC \\h \\z \\c "Table"', [("table of figures", t) for t in Nums.tbllist])
 
 
@@ -577,7 +652,7 @@ def build_body(doc):
             elif t == "note":
                 p = doc.add_paragraph(style="Note")
                 if not b["text"].startswith("**"):
-                    p.add_run("Note. ").font.bold = True
+                    p.add_run(T["note"]).font.bold = True
                 add_inline(p, b["text"])
             elif t == "bul":
                 for item in b["items"]:
@@ -610,9 +685,11 @@ def set_properties(doc):
     cp = doc.core_properties
     cp.title, cp.subject = C.META["title"], C.META["subtitle"]
     cp.author = cp.last_modified_by = ""
-    cp.keywords = "API Gateway; architecture; operating model; standard"
+    cp.keywords = T["keywords"]
     cp.created = cp.modified = datetime.fromisoformat(C.META["date_iso"]).replace(hour=12)
-    cp.comments = "Draft. Converted from README.md."
+    cp.comments = T["comments"]
+    if RTL:
+        cp.language = "he-IL"
 
 
 def strip_template_thumbnail(path):
@@ -632,10 +709,119 @@ def strip_template_thumbnail(path):
 
 
 # ---------------------------------------------------------------------------
+# Right-to-left finishing (Hebrew edition)
+# ---------------------------------------------------------------------------
+
+RPR_ORDER = ["rStyle", "rFonts", "b", "bCs", "i", "iCs", "caps", "smallCaps", "strike", "dstrike", "outline",
+             "shadow", "emboss", "imprint", "noProof", "snapToGrid", "vanish", "webHidden", "color", "spacing",
+             "w", "kern", "position", "sz", "szCs", "highlight", "u", "effect", "bdr", "shd", "fitText",
+             "vertAlign", "rtl", "cs", "em", "lang", "eastAsianLayout", "specVanish", "oMath"]
+
+
+def normalize_rpr(rpr):
+    """Give a run-properties element its complex-script twins and put its children in schema order.
+    Word formats Hebrew with the complex-script properties (bCs, iCs, szCs), not with b, i and sz."""
+    for base, twin in (("b", "bCs"), ("i", "iCs"), ("sz", "szCs")):
+        src = rpr.find(qn(f"w:{base}"))
+        if src is not None and rpr.find(qn(f"w:{twin}")) is None:
+            new = OxmlElement(f"w:{twin}")
+            for k, v in src.attrib.items():
+                new.set(k, v)
+            rpr.append(new)
+
+    def rank(e):
+        name = e.tag.split("}")[1]
+        return RPR_ORDER.index(name) if name in RPR_ORDER else len(RPR_ORDER)
+    for child in sorted(rpr, key=rank):
+        rpr.append(child)                              # re-appending moves the element
+
+
+def rtlify(doc):
+    """Mark Hebrew runs as right-to-left, add complex-script formatting, set each section's direction."""
+    roots = [doc.element, doc.styles.element]
+    for sec in doc.sections:
+        insert_ordered(sec._sectPr, el("w:bidi"), SECTPR_ORDER)
+        for part in (sec.header, sec.footer, sec.first_page_header, sec.first_page_footer):
+            if not part.is_linked_to_previous:
+                roots.append(part._element)
+    for root in roots:
+        for r in root.iter(qn("w:r")):
+            if HEBREW.search("".join(t.text or "" for t in r.iter(qn("w:t")))):
+                rpr = r.get_or_add_rPr()
+                if rpr.find(qn("w:rtl")) is None:
+                    rpr.append(OxmlElement("w:rtl"))
+        for rpr in root.iter(qn("w:rPr")):
+            normalize_rpr(rpr)
+
+
+def check_parity():
+    """A translation must have exactly the structure of the English content: same chapters, blocks,
+    keys, source sections, table shapes, figures, cross-references and placeholders."""
+    E = C_EN
+
+    def texts(b):
+        t = b["t"]
+        if t in ("p", "note"):
+            return [b["text"]]
+        if t == "bul":
+            return list(b["items"])
+        if t == "h2":
+            return [b["title"]]
+        if t == "fig":
+            return [b["caption"], b["alt"]]
+        cells = list(b["headers"] or [])
+        for row in b["rows"]:
+            for c in row:
+                cells.extend(c if isinstance(c, list) else [c])
+        return [b["caption"]] + cells
+
+    def marks(text):
+        return sorted(REF.findall(text)), text.count("[[")
+
+    if set(C.META) != set(E.META):
+        errors.append("parity: META keys differ")
+    if [r["version"] for r in C.REVISIONS] != [r["version"] for r in E.REVISIONS]:
+        errors.append("parity: REVISIONS versions differ")
+    if [c["code"] for c in C.CHAPTERS] != [c["code"] for c in E.CHAPTERS]:
+        errors.append("parity: chapter codes differ")
+        return
+    for ce, ct in zip(E.CHAPTERS, C.CHAPTERS):
+        code = ce["code"]
+        if (ce["appendix"], ce["src"]) != (ct["appendix"], ct["src"]):
+            errors.append(f"parity: {code}: appendix letter or README sources differ")
+        if [b["t"] for b in ce["blocks"]] != [b["t"] for b in ct["blocks"]]:
+            errors.append(f"parity: {code}: block sequence differs")
+            continue
+        for i, (be, bt) in enumerate(zip(ce["blocks"], ct["blocks"]), 1):
+            spot, t = f"{code} block {i}", be["t"]
+            fields = {"h2": ("key", "src"), "tbl": ("key", "widths", "first_bold"),
+                      "fig": ("key", "image", "width_cm")}.get(t, ())
+            for f in fields:
+                if be[f] != bt[f]:
+                    errors.append(f"parity: {spot}: '{f}' differs")
+            if t == "tbl" and ([len(r) for r in be["rows"]] != [len(r) for r in bt["rows"]]
+                               or len(be["headers"] or []) != len(bt["headers"] or [])
+                               or [[isinstance(c, list) and len(c) for c in r] for r in be["rows"]]
+                               != [[isinstance(c, list) and len(c) for c in r] for r in bt["rows"]]):
+                errors.append(f"parity: {spot}: table shape differs")
+            te, tt = texts(be), texts(bt)
+            if len(te) != len(tt):
+                errors.append(f"parity: {spot}: {len(tt)} text items, expected {len(te)}")
+                continue
+            for a, b in zip(te, tt):
+                if marks(a) != marks(b):
+                    errors.append(f"parity: {spot}: cross-references or placeholders differ: {b[:50]!r}")
+
+
+# ---------------------------------------------------------------------------
 # Build
 # ---------------------------------------------------------------------------
 
 def build():
+    if RTL:
+        check_parity()
+        if errors:
+            sys.exit("BUILD ERRORS:\n  - " + "\n  - ".join(errors))
     figures.generate_all()
     number_document()
     doc = Document()
@@ -656,6 +842,8 @@ def build():
     fill_header_footer(sec0, sec1)
     enable_update_fields(doc)
     set_properties(doc)
+    if RTL:
+        rtlify(doc)
 
     if errors:
         print("BUILD ERRORS:")
@@ -806,10 +994,11 @@ def verify():
         for row in t.rows:
             for cell in row.cells:
                 body_text += " " + cell.text
-    if re.search(r"\bshall\b", body_text, re.I):
-        problems.append("the word 'shall' is still used")
-    if re.search(r"\bGW-[A-Z]+-\d+", body_text):
-        problems.append("requirement identifiers are still present")
+    if not RTL:
+        if re.search(r"\bshall\b", body_text, re.I):
+            problems.append("the word 'shall' is still used")
+        if re.search(r"\bGW-[A-Z]+-\d+", body_text):
+            problems.append("requirement identifiers are still present")
     words = len(body_text.split())
     modals = {w: len(re.findall(rf"\b{w}\b", body_text)) for w in ("must", "should", "may", "can")}
 
@@ -817,8 +1006,8 @@ def verify():
     pics = doc.element.body.xpath(".//wp:docPr")
     if not pics or any(not d.get("descr") for d in pics):
         problems.append("figure without alt text")
-    cap_fig = sum(1 for p in doc.paragraphs if p.style.name == "Caption" and p.text.startswith("Figure"))
-    cap_tbl = sum(1 for p in doc.paragraphs if p.style.name == "Caption" and p.text.startswith("Table"))
+    cap_fig = sum(1 for p in doc.paragraphs if p.style.name == "Caption" and p.text.startswith(T["figure"]))
+    cap_tbl = sum(1 for p in doc.paragraphs if p.style.name == "Caption" and p.text.startswith(T["table"]))
     if cap_fig != len(pics):
         problems.append(f"{len(pics)} figures but {cap_fig} figure captions")
     if cap_tbl != len(Nums.tbllist):
@@ -851,8 +1040,22 @@ def verify():
     if not set(range(1, 41)) <= mapped:
         problems.append(f"README sections not covered: {sorted(set(range(1, 41)) - mapped)}")
 
+    if RTL:
+        # direction: base style, every table, every section; and no paragraph left untranslated
+        if doc.styles["Normal"].element.pPr.find(qn("w:bidi")) is None:
+            problems.append("Normal style is not right-to-left")
+        if any(t._tbl.tblPr.find(qn("w:bidiVisual")) is None for t in doc.tables):
+            problems.append("a table is not right-to-left")
+        if any(sec._sectPr.find(qn("w:bidi")) is None for sec in doc.sections):
+            problems.append("a section is not right-to-left")
+        for p in doc.paragraphs:                       # headings may be a bare product name (GitOps)
+            heading = p.style.name.startswith(("Heading", "toc", "table of figures"))
+            citation = p.text.lstrip("\u200e").startswith("BCP 14")   # external standard, cited in English
+            if p.text.strip() and not heading and not citation and not HEBREW.search(p.text):
+                problems.append(f"paragraph without Hebrew text: {p.text[:60]!r}")
+    stats = f"words={words}" if RTL else f"words={words} modal verbs={modals}"
     print(f"paragraphs={len(doc.paragraphs)} tables={len(doc.tables)} figures={len(pics)} "
-          f"sections={len(doc.sections)} words={words} modal verbs={modals}")
+          f"sections={len(doc.sections)} {stats}")
     if not C.REVISIONS or C.REVISIONS[-1]["version"] != C.META["version"]:
         problems.append("META version does not match the latest REVISIONS entry")
     if problems:
@@ -865,13 +1068,24 @@ def verify():
 
 
 if __name__ == "__main__":
+    args = sys.argv[1:]
+    lang = args[args.index("--lang") + 1] if "--lang" in args else "en"
+    if lang not in STR:
+        sys.exit(f"unknown language {lang!r}; available: {', '.join(STR)}")
+    select_language(lang)
+    if "--out" in args:
+        OUT_DOCX = os.path.abspath(args[args.index("--out") + 1])
+    if RTL and "--archive" in args:
+        sys.exit("--archive applies to the English edition only; the Hebrew edition is not archived.")
     build()
-    write_changes()
+    if not RTL:
+        write_changes()
     if errors:
         print("ERRORS:", *errors, sep="\n  - ")
         sys.exit(1)
     print(f"wrote {OUT_DOCX}")
-    print(f"wrote {OUT_CHANGES}")
+    if not RTL:
+        print(f"wrote {OUT_CHANGES}")
     status = verify()
     if status == 0 and "--archive" in sys.argv:
         status = archive()

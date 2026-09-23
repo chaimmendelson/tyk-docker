@@ -56,10 +56,10 @@ def CH(code, title, blocks, appendix=None, src=None):
 META = {
     "title": "API Gateway Enterprise Architecture Standard",
     "subtitle": "Architecture and Operating Model",
-    "version": "1.2",
+    "version": "1.3",
     "status": "Draft",
-    "date": "21 September 2026",
-    "date_iso": "2026-09-21",
+    "date": "22 September 2026",
+    "date_iso": "2026-09-22",
     "org": "[[Organization Name]]",
     "doc_id": "[[Document ID]]",
     "classification": "[[Classification]]",
@@ -83,6 +83,9 @@ REVISIONS = [
     {"version": "1.2", "date": "2026-09-21", "author": "[[Author]]",
      "desc": "Draft. Rewritten as continuous prose: numbered requirements and the "
              "requirements register removed; obligations expressed in plain must / should / can wording."},
+    {"version": "1.3", "date": "2026-09-22", "author": "[[Author]]",
+     "desc": "Draft. Table 6 (Section 12.1) lists only the responsibilities of the adjacent component; "
+             "the column for the Gateway's own responsibilities is removed."},
 ]
 
 # ---------------------------------------------------------------------------
@@ -668,29 +671,24 @@ CHAPTERS.append(CH("BND", "Platform Boundaries", [
     H2("Boundary overview", "matrix2", [33, 34, 35, 36]),
     P("The Gateway is one component of a wider security and infrastructure architecture. "
       "{tbl:boundaries} summarizes the boundary between the Gateway and each adjacent component, and "
-      "the sections that follow explain each boundary."),
+      "the sections that follow explain each boundary.",
+      chg="README §33-§36 set out both sides of each boundary; the table now lists only what the adjacent "
+          "component is responsible for (the Gateway's side is stated in the sections that follow). "
+          "Changed on request."),
     TBL("boundaries", "Boundaries between the Gateway and adjacent components",
-        ["Adjacent component", "The Gateway is responsible for", "The adjacent component is responsible for"],
+        ["Adjacent component", "The adjacent component is responsible for"],
         [["WAF",
-          ["Authentication", "Authorization", "Routing", "Rate limiting", "API policies",
-           "Request controls", "Timeouts", "API-level transformations", "API contract validation",
-           "API observability"],
           ["Attack signatures", "SQL injection detection", "Cross-site scripting detection",
            "Malicious payload detection", "Bot protection", "Other application security controls"]],
          ["Load Balancer",
-          ["Authentication", "Authorization", "Rate limiting", "API policy", "Routing",
-           "Transformation", "Observability"],
           ["Distribution between backend instances", "Backend pool management",
            "Infrastructure-level traffic distribution", "Instance-level availability"]],
          ["Identity Provider",
-          ["Consuming identity", "Validating tokens", "Enforcing API authorization",
-           "Passing trusted identity information downstream"],
           ["User authentication", "Client authentication", "Token issuance", "Identity lifecycle"]],
          ["Application",
-          ["Infrastructure-level protection"],
           ["Business authorization", "Business validation", "Business logic", "Data access control",
            "Business-level auditing"]]],
-        [3.2, 6.4, 6.4]),
+        [4.0, 12.0]),
 
     H2("Gateway and WAF", "waf", [33]),
     P("The Gateway is not a WAF and must not attempt to become one. Protection against application-layer "

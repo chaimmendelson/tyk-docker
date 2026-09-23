@@ -1,6 +1,6 @@
 # Plan and status: API Gateway Enterprise Architecture Standard
 
-**Latest version:** 1.2 (Draft), issued and archived in `versions/v1.2/` (earlier: `versions/v1.1/`, `versions/v1.0/`). To make further changes, start 1.3 (see "Working with versions"). **Format:** Word (.docx), English, A4.
+**Latest version:** 1.3 (Draft), issued and archived in `versions/v1.3/` (earlier: `versions/v1.2/`, `versions/v1.1/`, `versions/v1.0/`). To make further changes, start 1.4 (see "Working with versions"). **Format:** Word (.docx), English, A4.
 Converted from `README.md` (the source notes) by a full rewrite into a formal standard.
 
 ## Status
@@ -10,13 +10,14 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | Version 1.0 built, schema-validated, archived in `versions/v1.0/`, committed (`c9af9d0`, branch `docs/api-gateway-standard-v1`) | Done |
 | Version 1.1 issued, archived in `versions/v1.1/` and committed (`029cf6d`): three open issues settled (capability enablement, consumer configuration in Git, exception approval), security core made mandatory, README updated | Done |
 | Version 1.2 issued, archived in `versions/v1.2/` and committed: rewritten as continuous prose (numbered requirements, requirement IDs and the requirements register removed; obligations carried by plain must / should / can wording) | Done |
+| Version 1.3 issued and archived in `versions/v1.3/` (**not yet committed**): Table 6 (Section 12.1) lists only the adjacent component's responsibilities; the "Gateway is responsible for" column is removed. The Hebrew edition was added at the same time, issued at 1.3 | Done |
 | README updated with the review decisions | Done |
 | Visual check of the rendered pages | **Not done**: no Word or LibreOffice on this machine. Open the .docx in Word; press F9 (or answer "Yes" to the update prompt) so the contents and lists get page numbers |
 | Placeholders (organization, document ID, classification, owner, author, dates, approvers) | **Open**: highlighted yellow in the document |
 | Places where the meaning differs from the README (mostly "should" strengthened to "must") | **Open**: the ones strengthened in 1.0 still await confirmation; all are listed by section in `CHANGES.md` |
 | Two readings of terse answers (health checks beyond HTTP; scope gaps "yes"), and one unanswered question (can consumers be created at runtime?) | **Open**: see `CHANGES.md`, "Decisions taken during review" |
 | Name of the Security Managers team | **Open**: placeholder in the definitions table |
-| Uncommitted changes | None (everything through 1.2 is committed on the branch above) |
+| Uncommitted changes | **Yes.** Everything from the Table 6 change and version 1.3 (archive, `INDEX.md`, `CHANGES.md`, working copy), and the Hebrew edition with its build support (`content_he.py`, `figures/he/`, changes to `build_docx.py` and `figures.py`) |
 
 ## Files
 
@@ -29,6 +30,7 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | `content.py` | The document as data: chapters, requirements, tables, metadata, `REVISIONS` |
 | `build_docx.py` | Builds the .docx and `CHANGES.md`, runs the consistency checks, archives versions |
 | `figures.py`, `figures/` | Diagram generator (Pillow) and its six PNGs |
+| `content_he.py`, `API_Gateway_Enterprise_Architecture_Standard_he.docx` | Hebrew (right-to-left) edition of 1.3: same structure as `content.py`, checked against it on every build (`check_parity`). Not archived under `versions/`. Hebrew figures are drawn into `figures/he/` |
 | `main.py` | Empty, unused |
 
 ## Working with versions
@@ -37,18 +39,21 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 cd apps/api-gateway-doc
 ../.venv/bin/python build_docx.py             # rebuild the working copy and run the checks
 ../.venv/bin/python build_docx.py --archive   # also archive it as versions/v<version>/
+../.venv/bin/python build_docx.py --lang he   # Hebrew edition (from content_he.py); no CHANGES.md, no archive
 ```
+
+When `content.py` changes, update `content_he.py` to match: the Hebrew build stops with a parity error if the structure, references or placeholders differ, but it cannot tell whether the wording still means the same.
 
 To issue a new version (for example 1.1 or 2.0):
 1. Edit `content.py` (or `figures.py`).
 2. Set `META["version"]` and append an entry to `REVISIONS` (date, author, summary). The revision history in the document is generated from it.
 3. Run the build with `--archive`. It refuses if that version already exists, and it updates `versions/INDEX.md`.
 
-Archived versions are kept as files, and the sources for each are in git: commit when a version is archived (1.0 is commit `c9af9d0`, 1.1 is `029cf6d`, 1.2 is the commit that follows them on the branch). Do not run `--archive` until the new version's `REVISIONS` summary is written.
+Archived versions are kept as files, and the sources for each are in git: commit when a version is archived (1.0 is commit `c9af9d0`, 1.1 is `029cf6d`, 1.2 is the commit that follows them on the branch, 1.3 is not yet committed). Do not run `--archive` until the new version's `REVISIONS` summary is written.
 
 ## Document structure
 
-13 chapters and 3 appendices, written as continuous prose (about 5,400 words) with 11 tables and 6 figures. Versions 1.0 and 1.1 have numbered requirements (`GW-<area>-NNN`); 1.2 does not.
+13 chapters and 3 appendices, written as continuous prose (about 5,400 words) with 11 tables and 6 figures. Versions 1.0 and 1.1 have numbered requirements (`GW-<area>-NNN`); 1.2 and later do not.
 
 | Ch. | Subject |
 |---|---|
@@ -78,10 +83,10 @@ Recorded in the document and listed in `CHANGES.md`. Summary: token lifetime is 
 ## Next steps
 
 1. Open the .docx in Word and check layout, page breaks, figures and the contents page.
-2. Fill in the yellow placeholders as part of 1.3, so the filled-in values are archived with it.
+2. Fill in the yellow placeholders as part of 1.4, so the filled-in values are archived with it.
 3. Confirm or downgrade the strengthened statements in `CHANGES.md`, confirm the two readings above, and answer the runtime-consumers question.
 4. Name the Security Managers team, and resolve OI-01 (governance body, Appendix C) or accept it as open.
-5. When 1.3 is agreed: write its `REVISIONS` summary, run the build with `--archive`, and commit.
+5. When 1.4 is agreed: write its `REVISIONS` summary, run the build with `--archive`, and commit.
 
 ## How it is checked
 
