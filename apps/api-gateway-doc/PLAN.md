@@ -1,6 +1,6 @@
 # Plan and status: API Gateway Enterprise Architecture Standard
 
-**Latest version:** 1.3 (Draft), issued and archived in `versions/v1.3/` (earlier: `versions/v1.2/`, `versions/v1.1/`, `versions/v1.0/`). To make further changes, start 1.4 (see "Working with versions"). **Format:** Word (.docx), English, A4.
+**Latest version:** 1.4 (Draft), built but **not yet archived** (archive command below). Archived: `versions/v1.3/`, `v1.2/`, `v1.1/`, `v1.0/`. **Format:** Word (.docx), English, A4.
 Converted from `README.md` (the source notes) by a full rewrite into a formal standard.
 
 ## Status
@@ -11,7 +11,8 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | Version 1.1 issued, archived in `versions/v1.1/` and committed (`029cf6d`): three open issues settled (capability enablement, consumer configuration in Git, exception approval), security core made mandatory, README updated | Done |
 | Version 1.2 issued, archived in `versions/v1.2/` and committed: rewritten as continuous prose (numbered requirements, requirement IDs and the requirements register removed; obligations carried by plain must / should / can wording) | Done |
 | Version 1.3 issued and archived in `versions/v1.3/` (**not yet committed**): Table 6 (Section 12.1) lists only the adjacent component's responsibilities; the "Gateway is responsible for" column is removed. The Hebrew edition was added at the same time, issued at 1.3 | Done |
-| README updated with the review decisions | Done |
+| Version 1.4 built (English and Hebrew), checks pass, **not archived, not committed**. Review decisions: scope = API Gateway for web traffic only; authorization, version routing, API contract, Developer Portal and metrics back to "should" (capability table: "Recommended"); health checks must for HTTP, should for others; consumers can be created at runtime; TLS required from consumers to the Gateway; retention defined by the organization; exceptions time-limited; classification Unclassified / בלמ"ס, owner Perimeter, author Chaim Mendelson, document ID removed, organization generic | Done |
+| README updated with the review decisions | Done up to 1.3; **1.4 decisions not yet reflected in README** |
 | Visual check of the rendered pages | **Not done**: no Word or LibreOffice on this machine. Open the .docx in Word; press F9 (or answer "Yes" to the update prompt) so the contents and lists get page numbers |
 | Placeholders (organization, document ID, classification, owner, author, dates, approvers) | **Open**: highlighted yellow in the document |
 | Places where the meaning differs from the README (mostly "should" strengthened to "must") | **Open**: the ones strengthened in 1.0 still await confirmation; all are listed by section in `CHANGES.md` |
@@ -30,7 +31,7 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 | `content.py` | The document as data: chapters, requirements, tables, metadata, `REVISIONS` |
 | `build_docx.py` | Builds the .docx and `CHANGES.md`, runs the consistency checks, archives versions |
 | `figures.py`, `figures/` | Diagram generator (Pillow) and its six PNGs |
-| `content_he.py`, `API_Gateway_Enterprise_Architecture_Standard_he.docx` | Hebrew (right-to-left) edition of 1.3: same structure as `content.py`, checked against it on every build (`check_parity`). Not archived under `versions/`. Hebrew figures are drawn into `figures/he/` |
+| `content_he.py`, `API_Gateway_Enterprise_Architecture_Standard_he.docx` | Hebrew (right-to-left) edition of 1.3: same structure as `content.py`, checked against it on every build (`check_parity`). Archived under `versions/` from 1.4 (with `--lang he --archive`). Hebrew figures are drawn into `figures/he/` |
 | `main.py` | Empty, unused |
 
 ## Working with versions
@@ -39,7 +40,8 @@ Converted from `README.md` (the source notes) by a full rewrite into a formal st
 cd apps/api-gateway-doc
 ../.venv/bin/python build_docx.py             # rebuild the working copy and run the checks
 ../.venv/bin/python build_docx.py --archive   # also archive it as versions/v<version>/
-../.venv/bin/python build_docx.py --lang he   # Hebrew edition (from content_he.py); no CHANGES.md, no archive
+../.venv/bin/python build_docx.py --lang he   # Hebrew edition (from content_he.py); no CHANGES.md
+../.venv/bin/python build_docx.py --lang he --archive   # from 1.4: add the Hebrew edition to versions/v<version>/ (archive English first)
 ```
 
 When `content.py` changes, update `content_he.py` to match: the Hebrew build stops with a parity error if the structure, references or placeholders differ, but it cannot tell whether the wording still means the same.

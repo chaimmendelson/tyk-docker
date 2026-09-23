@@ -56,15 +56,14 @@ def CH(code, title, blocks, appendix=None, src=None):
 META = {
     "title": "API Gateway Enterprise Architecture Standard",
     "subtitle": "Architecture and Operating Model",
-    "version": "1.3",
+    "version": "1.4",
     "status": "Draft",
-    "date": "22 September 2026",
-    "date_iso": "2026-09-22",
-    "org": "[[Organization Name]]",
-    "doc_id": "[[Document ID]]",
-    "classification": "[[Classification]]",
-    "owner": "[[Document owner, Infrastructure Team]]",
-    "author": "[[Author]]",
+    "date": "23 September 2026",
+    "date_iso": "2026-09-23",
+    "org": "the Organization",
+    "classification": "Unclassified",
+    "owner": "Perimeter",
+    "author": "Chaim Mendelson",
     "review_cycle": "[[Review cycle, e.g. annual]]",
     "effective": "[[Effective date]]",
     "next_review": "[[Next review date]]",
@@ -86,6 +85,13 @@ REVISIONS = [
     {"version": "1.3", "date": "2026-09-22", "author": "[[Author]]",
      "desc": "Draft. Table 6 (Section 12.1) lists only the responsibilities of the adjacent component; "
              "the column for the Gateway's own responsibilities is removed."},
+    {"version": "1.4", "date": "2026-09-23", "author": "Chaim Mendelson",
+     "desc": "Draft. Review decisions: scope stated as an API Gateway for web traffic only; authorization, "
+             "version routing, API contract, Developer Portal and metrics changed from must to should; "
+             "health checks required for HTTP and recommended for other technologies; consumers can be "
+             "created at runtime; TLS required for consumer traffic to the Gateway; retention defined by "
+             "the organization; exceptions are time-limited; cover-page details filled in and the "
+             "document ID removed."},
 ]
 
 # ---------------------------------------------------------------------------
@@ -98,7 +104,7 @@ CHAPTERS = []
 CHAPTERS.append(CH("INT", "Introduction", [
     H2("Purpose", "purpose", [1]),
     P("This document sets out the enterprise architecture and operating model of the API Gateway "
-      "platform of [[Organization Name]]. It is the reference for the design and operation of the "
+      "platform of the Organization. It is the reference for the design and operation of the "
       "platform, for the application teams that expose APIs through it, and for the security, risk, "
       "audit and governance functions that oversee it."),
     P("The API Gateway is an enterprise infrastructure layer positioned between API consumers and "
@@ -110,12 +116,9 @@ CHAPTERS.append(CH("INT", "Introduction", [
          "platform, its capabilities, and the technical guardrails around it.**"),
 
     H2("Scope", "scope", [2]),
-    P("The Gateway handles web traffic to backend services. The scope is deliberately defined as web "
-      "traffic, not as a fixed list of protocols, so that the architecture is not coupled to any one "
-      "application protocol. The platform is intended to support HTTP/HTTPS, GraphQL, gRPC and MCP, "
-      "together with other web-based API technologies. WebSocket and streaming traffic, "
-      "service-to-service (east-west) traffic, multi-tenant use of the platform and non-production "
-      "environments are also within scope. SOAP is outside the scope of this document."),
+    P("The scope of this document is the API Gateway for web traffic to backend services. The scope is "
+      "defined as web traffic, not as a list of protocols or environments, so that the architecture is "
+      "not coupled to any one application protocol or deployment."),
     P("The following adjacent systems are outside the scope of this document, except for the boundaries "
       "described in {ch:BND}: the Web Application Firewall (WAF), the organization's Load Balancer, the "
       "Identity Provider, the secrets-management solution, and the business logic of individual "
@@ -168,8 +171,8 @@ CHAPTERS.append(CH("INT", "Introduction", [
          ["Load Balancer", "Infrastructure that distributes traffic between instances of a backend."],
          ["Management Plane", "The management layer used to configure and manage Gateways; also "
                               "referred to as the control plane or central management."],
-         ["Security Managers", "The team [[team name]] designated by the organization to approve "
-                               "exceptions to this document."],
+         ["Security Managers", "The team designated by the organization to approve exceptions to this "
+                               "document."],
          ["Site", "A location or environment in which applications run and in which a Gateway can be "
                   "deployed."],
          ["Source of truth", "The single authoritative location from which the deployed state is derived."],
@@ -357,11 +360,9 @@ CHAPTERS.append(CH("IAM", "Identity, Authentication and Authorization", [
         "and policies, and forwards an authorized request with trusted identity attributes to the backend."),
 
     H2("Authorization", "authz", [7]),
-    P("The Gateway enforces authorization at the API and operation level. For example, a consumer can "
+    P("The Gateway should enforce authorization at the API and operation level. For example, a consumer can "
       "be allowed to call GET /customers and denied DELETE /customers. Gateway authorization decisions "
-      "can be based on identity, groups, roles, claims, scopes, policies and consumer identity.",
-      chg="README §7 said 'should enforce'; stated as an obligation because §38 lists Authorization as "
-          "'Required'."),
+      "can be based on identity, groups, roles, claims, scopes, policies and consumer identity."),
     P("The application remains responsible for authorization decisions that require business context, "
       "and the Gateway does not implement business authorization logic. The two questions differ: the "
       "Gateway asks whether this consumer is allowed to call GET /customers/{id}, while the "
@@ -377,13 +378,11 @@ CHAPTERS.append(CH("TRF", "Traffic Management", [
       "API-based, operation-based and version routing."),
 
     H2("Version routing", "vroute", [8]),
-    P("Routing between API versions is an important Gateway capability, and the Gateway provides the "
+    P("Routing between API versions is an important Gateway capability, and the Gateway should provide the "
       "technical means to do it. For example, requests to /api/v1/customers can be routed to one "
       "backend and requests to /api/v2/customers to another. The decisions about versions stay with the "
       "Application Team, which decides which versions exist, which consumers use each one, and when a "
-      "version is deprecated and retired.",
-      chg="README §8.1 said 'should provide the technical capability'; stated as an obligation because "
-          "§38 lists Version Routing as 'Required'."),
+      "version is deprecated and retired."),
 
     H2("Load balancing boundary", "lb", [9]),
     P("The Gateway is not the organization's general-purpose Load Balancer and must not be used as one. "
@@ -396,15 +395,15 @@ CHAPTERS.append(CH("TRF", "Traffic Management", [
           "Balancer as a 'separate responsibility'."),
 
     H2("Health checks", "health", [10]),
-    P("The Gateway must be able to determine whether a backend is available before it routes traffic to "
-      "it. It does this with regular health checks, which apply to the backends of all API "
-      "technologies; no protocol-specific mechanism is defined. Health checking supports HTTP health "
-      "endpoints, configurable intervals and timeouts, failure and recovery thresholds, and "
-      "backend-specific configuration. The Application Team is responsible for exposing an appropriate "
-      "health endpoint for its backend, and the Gateway uses the result to make its routing decisions.",
-      chg="README §10 said 'should'; strengthened because §38 lists Health Checks as 'Required'. The "
-          "sentence that health checks are regular and apply to all API technologies records a review "
-          "decision, which is still to be confirmed."),
+    P("The Gateway must be able to determine whether an HTTP backend is available before it routes "
+      "traffic to it. It does this with regular health checks. For backends of other API technologies, "
+      "such as gRPC, WebSocket and MCP, regular health checks are recommended. No protocol-specific "
+      "mechanism is defined. Health checking supports HTTP health endpoints, configurable intervals and "
+      "timeouts, failure and recovery thresholds, and backend-specific configuration. The Application "
+      "Team is responsible for exposing an appropriate health endpoint for its backend, and the Gateway "
+      "uses the result to make its routing decisions.",
+      chg="README §10 said 'should'; strengthened to 'must' for HTTP because §38 lists Health Checks as "
+          "'Required'. Decided at 1.4: 'should' for other API technologies."),
 
     H2("Timeouts", "timeouts", [11]),
     P("Timeouts are a required Gateway capability. The Gateway enforces a connection timeout, a backend "
@@ -475,12 +474,10 @@ CHAPTERS.append(CH("POL", "API Policy Capabilities", [
 # 7 -------------------------------------------------------------------------
 CHAPTERS.append(CH("LCY", "API Contract, Lifecycle and Developer Portal", [
     H2("API contract", "contract", [17]),
-    P("Every API must have a defined technical contract, and the contract should be version controlled "
+    P("Every API should have a defined technical contract, and the contract should be version controlled "
       "as part of the API lifecycle. It should describe the endpoints, methods, parameters, headers, "
       "request and response schemas, error responses, authentication and authorization requirements, "
-      "and versions.",
-      chg="README §17 said 'should'; strengthened to 'must' because §38 lists API Documentation as "
-          "'Required'."),
+      "and versions."),
 
     H2("API lifecycle", "lifecycle", [18]),
     P("The API lifecycle runs from design through development, exposure and operation, and then change "
@@ -501,14 +498,12 @@ CHAPTERS.append(CH("LCY", "API Contract, Lifecycle and Developer Portal", [
       "no longer required."),
 
     H2("Developer Portal", "portal", [19]),
-    P("The Platform provides a Developer Portal. The portal should offer API discovery, documentation, "
+    P("The Platform should provide a Developer Portal. The portal should offer API discovery, documentation, "
       "versions, authentication and authorization requirements, usage information and access-request "
       "information, and it should give clear instructions on how to obtain authorization to consume an "
       "API. How credentials are issued or access is granted depends on the organization's "
       "implementation and is not inherently a responsibility of the Gateway. The API owner is "
-      "responsible for the accuracy of the API documentation.",
-      chg="README §19 said 'should provide a Developer Portal'; stated as an obligation because §38 "
-          "lists Developer Portal as 'Required'."),
+      "responsible for the accuracy of the API documentation."),
 ]))
 
 # 8 -------------------------------------------------------------------------
@@ -517,13 +512,15 @@ CHAPTERS.append(CH("CFG", "Configuration Management", [
     P("API configuration is synchronized with Git, and Git is the source of truth for API definitions, "
       "routes, policies, Gateway configuration, version configuration and consumer configuration. "
       "Consumer configuration means the consumer's identity, its entitlements (the APIs and operations "
-      "it can use) and its rate limits. Consumer credentials are never held in Git; see {sec:secrets}. "
+      "it can use) and its rate limits. Consumers can also be created at runtime, for example through "
+      "the Developer Portal. Consumer credentials are never held in Git; see {sec:secrets}. "
       "Direct manual changes to production Gateway configuration should be avoided. Working from Git "
       "provides change history, review, auditability, rollback, reproducibility and consistency "
       "between environments.",
       chg="README §20 said 'should be synchronized' and 'should serve as the Source of Truth'; stated as "
           "obligations because §38 lists Git Integration as 'Required'. 'Consumer configuration where "
-          "appropriate' is defined by a review decision as identity, entitlements and rate limits."),
+          "appropriate' is defined by a review decision as identity, entitlements and rate limits. "
+          "Decided at 1.4: consumers can also be created at runtime."),
 
     H2("GitOps", "gitops", [21]),
     P("The preferred operating model is GitOps. A change is defined in Git, reviewed, validated, "
@@ -562,12 +559,10 @@ CHAPTERS.append(CH("OBS", "Observability and Audit", [
           "decision."),
 
     H2("Metrics", "metrics", [24]),
-    P("The Gateway exposes metrics for request volume, error rate, latency, backend latency, "
+    P("The Gateway should expose metrics for request volume, error rate, latency, backend latency, "
       "availability, rate limiting, authentication failures, authorization failures, backend failures "
       "and Gateway health. Metrics should be available by API, operation, consumer, backend and "
-      "environment.",
-      chg="README §24 said 'should expose'; stated as an obligation because §38 lists Metrics as "
-          "'Required'."),
+      "environment."),
 
     H2("Audit", "audit", [25]),
     P("Audit logging is mandatory for all administrative and configuration activities. An audit record "
@@ -575,8 +570,8 @@ CHAPTERS.append(CH("OBS", "Observability and Audit", [
       "configuration was affected. Audit logs are sent to a centralized system outside the direct "
       "control of the person performing the operation. Two complementary sources of evidence exist for "
       "every change: Git shows what change was requested and approved, and the Gateway audit shows "
-      "what was actually changed or executed. No retention period is defined for runtime logs or audit "
-      "logs.",
+      "what was actually changed or executed. The retention period for runtime logs and audit logs "
+      "is defined by the organization.",
       chg="README §25 said audit logs 'should record' these details and 'should be sent' to a central "
           "system; stated as obligations because audit logging is described as mandatory."),
 ]))
@@ -636,9 +631,10 @@ CHAPTERS.append(CH("GOV", "Governance and Exceptions", [
     H2("Mandatory guardrails", "guardrails", [30]),
     P("Requirements that are suited to technical enforcement should be implemented as mandatory Gateway "
       "guardrails. Examples are HTTPS at required boundaries, authentication, required logging, a "
-      "maximum request size and mandatory organizational policies. Communication within the cluster, "
-      "including between the Gateway and backend services, uses HTTP. No minimum TLS version and no "
-      "maximum request size are defined by this document."),
+      "maximum request size and mandatory organizational policies. Traffic from consumers to the "
+      "Gateway must use TLS. Communication within the cluster, including between the Gateway and "
+      "backend services, uses HTTP. No minimum TLS version and no maximum request size are defined by "
+      "this document."),
 
     H2("Standards", "standards", [30]),
     P("Standards define the organization's preferred and consistent way of operating APIs. Where it is "
@@ -658,12 +654,14 @@ CHAPTERS.append(CH("GOV", "Governance and Exceptions", [
       "the Infrastructure Team the owner of individual APIs."),
 
     H2("Exceptions", "exceptions", [32]),
-    P("The Platform should support a controlled exception mechanism. An exception should have a "
+    P("The Platform should support a controlled exception mechanism. An exception must have a "
       "documented reason, an identified owner, approval from the Security Managers, a statement of the "
-      "risks involved, and an expiration or review date where appropriate. Exceptions should not "
-      "become an alternative to proper architecture.",
-      chg="README §32 said 'an appropriate approval'; a review decision names the approver: the "
-          "Security Managers."),
+      "risks involved, and an expiration or review date. An exception is time-limited: at that date it "
+      "expires, or it is reviewed and renewed. Exceptions should not become an alternative to proper "
+      "architecture.",
+      chg="README §32 said 'an appropriate approval' and an expiration or review date 'where "
+          "appropriate'; review decisions name the approver (the Security Managers) and make the date "
+          "mandatory (1.4)."),
 ]))
 
 # 12 ------------------------------------------------------------------------
@@ -739,28 +737,28 @@ CHAPTERS.append(CH("APA", "Capability Summary", [
     P("{tbl:capabilities} summarizes the status of each capability. **Required** means that the "
       "Platform provides the capability and applies it. **Required capability** means that the "
       "Platform provides the capability and the Application Team decides whether to enable it for a "
-      "given API. **Preferred** identifies the preferred operating model. The remaining entries "
+      "given API. **Recommended** means that the Platform should provide the capability. **Preferred** identifies the preferred operating model. The remaining entries "
       "identify responsibilities that lie outside the Gateway."),
     TBL("capabilities", "Capability summary",
         ["Capability", "Status", "Described in"],
         [["API routing", "Required", "{sec:routing}"],
-         ["Version routing", "Required", "{sec:vroute}"],
+         ["Version routing", "Recommended", "{sec:vroute}"],
          ["Health checks", "Required", "{sec:health}"],
          ["Timeouts", "Required", "{sec:timeouts}"],
          ["Automatic retry", "Not recommended by default", "{sec:retry}"],
          ["Authentication", "Required", "{sec:consumers}, {sec:c2b}, {sec:b2b}"],
-         ["Authorization", "Required", "{sec:authz}"],
+         ["Authorization", "Recommended", "{sec:authz}"],
          ["Rate limiting", "Required capability", "{sec:ratelimit}"],
          ["Transformation", "Required capability", "{sec:transform}"],
          ["Caching", "Required capability", "{sec:cache}"],
          ["Schema validation", "Required capability", "{sec:schema}"],
-         ["API documentation", "Required", "{sec:contract}, {sec:portal}"],
-         ["Developer Portal", "Required", "{sec:portal}"],
+         ["API documentation", "Recommended", "{sec:contract}, {sec:portal}"],
+         ["Developer Portal", "Recommended", "{sec:portal}"],
          ["Git integration", "Required", "{sec:git}"],
          ["GitOps", "Preferred operating model", "{sec:gitops}"],
          ["Audit logs", "Required", "{sec:audit}"],
          ["Runtime logs", "Required", "{sec:logging}"],
-         ["Metrics", "Required", "{sec:metrics}"],
+         ["Metrics", "Recommended", "{sec:metrics}"],
          ["High availability", "Required", "{sec:sla}"],
          ["Distributed Data Plane", "Required", "{sec:distributed}"],
          ["Centralized management", "Preferred", "{sec:mgmt}"],
@@ -837,34 +835,43 @@ NEW_CONTENT = [
 DECISIONS = [
     ("Token lifetime", "Defined by the owner of the Identity Provider; the document says so "
                        "({sec:consumers}, note)."),
-    ("Transport security", "Traffic inside the cluster, including Gateway to backend, uses HTTP; no minimum "
-                           "TLS version is defined ({sec:guardrails}). 'HTTPS at required boundaries' is "
-                           "kept as a guardrail example, without saying which boundaries."),
+    ("Transport security", "Traffic from consumers to the Gateway must use TLS; traffic inside the cluster, "
+                           "including Gateway to backend, uses HTTP; no minimum TLS version is defined "
+                           "({sec:guardrails})."),
     ("Maximum request size", "No maximum is defined ({sec:guardrails}). 'Maximum request size' stays in "
                              "the README's list of guardrail examples."),
     ("Availability measurement", "99.9% applies during regular operation; planned maintenance is excluded "
                                  "({sec:sla})."),
     ("Management Plane", "The Data Plane runs on its last known configuration indefinitely, and the "
                          "Management Plane should be restorable within one hour ({sec:mgmt})."),
-    ("Retention", "No log or audit retention period is defined ({sec:audit})."),
+    ("Retention", "The retention period for logs and audit records is defined by the organization; no "
+                  "period is set in this document ({sec:audit})."),
     ("Sensitive payloads", "Payloads involving sensitive information should not be logged; what is "
                            "sensitive is defined per API by the Application Team ({sec:logging})."),
-    ("Health checks beyond HTTP", "Read as: regular health checks apply to all API technologies, with no "
-                                  "protocol-specific mechanism ({sec:health}). Please confirm this reading."),
+    ("Health checks beyond HTTP", "Required for HTTP backends; recommended for other API technologies "
+                                  "such as gRPC, WebSocket and MCP ({sec:health}). Confirmed at 1.4."),
     ("Anonymous APIs", "Not permitted ({sec:consumers})."),
     ("Governance body", "Not yet defined; recorded in {sec:orggov} and kept open ({ch:APC})."),
-    ("Scope gaps", "Read 'yes' as: WebSocket/streaming, east-west traffic, multi-tenancy and "
-                   "non-production environments are in scope ({sec:scope}). Please confirm this reading."),
+    ("Scope", "The scope is the API Gateway for web traffic, with no list of included protocols or "
+              "environments ({sec:scope}). Decided at 1.4; replaces the earlier reading of 'yes'."),
     ("Exception approval", "Exceptions are approved by the Security Managers, a defined team ({sec:exceptions}). "
-                           "The team's name is a placeholder to fill in ({sec:defs})."),
+                           "The team is referred to by its role name, Security Managers ({sec:defs}). At 1.4 an exception "
+                           "must be time-limited, with an expiration or review date ({sec:exceptions})."),
     ("Capability enablement", "Rate limiting, caching and schema validation stay fully optional per API and "
                               "are recommended where they can help ({sec:ratelimit}, {sec:cache}, {sec:schema})."),
     ("Consumer configuration in Git", "Git holds consumer identity, entitlements (APIs and operations) and "
-                                      "rate limits; credentials are never in Git ({sec:git}). Not answered: "
-                                      "whether consumers can also be created at runtime, for example through "
-                                      "the Developer Portal."),
+                                      "rate limits; credentials are never in Git ({sec:git}). Decided at 1.4: "
+                                      "consumers can also be created at runtime, for example through the "
+                                      "Developer Portal."),
     ("Security core made mandatory", "C2B use of the IdP with short-lived tokens, the B2B token exchange, no "
                                      "long-lived credential on every request, and no reliance on undocumented "
                                      "manual production configuration are now mandatory (see the change table "
                                      "above). Other 'should' statements are unchanged."),
+    ("Review of strengthened statements (1.4)", "Kept as 'must' after review: {sec:entry}, {sec:lb}, "
+                                                "{sec:timeouts}, {sec:transform}, {sec:git}, {sec:secrets}, "
+                                                "{sec:logging}, {sec:audit}, {sec:sla}, {sec:distributed}, "
+                                                "{sec:mgmt}, {sec:waf}. Returned to 'should': {sec:authz}, "
+                                                "{sec:vroute}, {sec:contract}, {sec:portal}, {sec:metrics}."),
+    ("Cover page (1.4)", "Classification 'Unclassified' (Hebrew edition: בלמ\"ס), owner Perimeter, "
+                         "author Chaim Mendelson, organization named generically. The document ID field is removed."),
 ]

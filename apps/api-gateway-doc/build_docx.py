@@ -6,7 +6,7 @@
 
 Inputs : content.py (the document as data), content_he.py (its Hebrew translation), figures.py (diagrams)
 Outputs: API_Gateway_Enterprise_Architecture_Standard.docx, CHANGES.md
-         API_Gateway_Enterprise_Architecture_Standard_he.docx (Hebrew; no CHANGES.md, not archived)
+         API_Gateway_Enterprise_Architecture_Standard_he.docx (Hebrew; no CHANGES.md; archived with --archive from 1.4)
 Options: --out PATH   write the .docx there instead (used for regression checks)
 """
 import os
@@ -81,7 +81,7 @@ STR = {
         rev_headers=["גרסה", "תאריך", "מחבר", "תיאור"], appr_headers=["תפקיד", "שם", "חתימה", "תאריך"],
         role="[[תפקיד]]", name="[[שם]]", footer_version="גרסה {v} — {status}", page="עמוד", of=" מתוך ",
         keywords="API Gateway; ארכיטקטורה; מודל תפעולי; תקן",
-        comments="טיוטה. תרגום לעברית של גרסה 1.3.",
+        comments="טיוטה. תרגום לעברית של גרסה 1.4.",
         appendix_letters={"A": "א׳", "B": "ב׳", "C": "ג׳"}),
 }
 T = STR["en"]
@@ -574,7 +574,7 @@ def build_cover(doc):
     add_inline(p, meta["subtitle"], size=16, color=GRAY)
     add_table(doc, None,
               [[T["version"], f"{meta['version']}"], [T["status"], meta["status"]], [T["date"], meta["date"]],
-               [T["doc_id"], meta["doc_id"]], [T["classification"], meta["classification"]]],
+               [T["classification"], meta["classification"]]],
               [4.0, 8.0])
     doc.add_page_break()
 
@@ -583,7 +583,7 @@ def build_document_control(doc):
     meta = C.META
     doc.add_paragraph(T["doc_control"], style="Front Heading")
     add_table(doc, None,
-              [[T["doc_title"], meta["title"]], [T["doc_id"], meta["doc_id"]],
+              [[T["doc_title"], meta["title"]],
                [T["version"], meta["version"]], [T["status"], meta["status"]],
                [T["classification"], meta["classification"]], [T["owner"], meta["owner"]],
                [T["author"], meta["author"]], [T["effective"], meta["effective"]],
@@ -941,8 +941,11 @@ def write_index():
     for r in reversed(C.REVISIONS):
         folder = f"v{r['version']}"
         if os.path.isdir(os.path.join(VERSIONS_DIR, folder)):
+            he = f"{folder}/{DOC_STEM}_he_{folder}.docx"
+            he_link = f" ([עברית]({he}))" if os.path.exists(os.path.join(VERSIONS_DIR, he)) else ""
             rows.append(f"| {r['version']} | {r['date']} | [{folder}/{DOC_STEM}_{folder}.docx]"
-                        f"({folder}/{DOC_STEM}_{folder}.docx) | {resolve(r['desc']).replace('[', '').replace(']', '')} |")
+                        f"({folder}/{DOC_STEM}_{folder}.docx){he_link} | "
+                        f"{resolve(r['desc']).replace('[', '').replace(']', '')} |")
     text = ["# Document versions", "",
             "Every issued version of the API Gateway Enterprise Architecture Standard. Archived versions "
             "are never overwritten; a change is issued as a new version.", "",
@@ -959,6 +962,19 @@ def archive():
         print(f"cannot archive: latest REVISIONS entry is not version {ver}")
         return 1
     dest = os.path.join(VERSIONS_DIR, f"v{ver}")
+    if RTL:
+        # The Hebrew edition joins the folder created by the English archive (run that first).
+        target = os.path.join(dest, f"{DOC_STEM}_he_v{ver}.docx")
+        if not os.path.isdir(dest):
+            print(f"cannot archive: {dest} does not exist; archive the English edition first.")
+            return 1
+        if os.path.exists(target):
+            print(f"cannot archive: {target} already exists. Archived versions are not overwritten.")
+            return 1
+        shutil.copy(OUT_DOCX, target)
+        write_index()
+        print(f"archived Hebrew edition {ver} -> {target}")
+        return 0
     if os.path.exists(dest):
         print(f"cannot archive: {dest} already exists. Archived versions are not overwritten; "
               "bump META['version'] and add a REVISIONS entry.")
@@ -1075,8 +1091,6 @@ if __name__ == "__main__":
     select_language(lang)
     if "--out" in args:
         OUT_DOCX = os.path.abspath(args[args.index("--out") + 1])
-    if RTL and "--archive" in args:
-        sys.exit("--archive applies to the English edition only; the Hebrew edition is not archived.")
     build()
     if not RTL:
         write_changes()
