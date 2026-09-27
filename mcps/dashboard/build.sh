@@ -26,12 +26,16 @@ npm install --ignore-scripts
 echo "==> fetching dashboard-swagger.yml"
 curl -sfL -o dashboard-swagger.yml "$SWAGGER_URL"
 
-TARGET="${PKG_TARGET:-node22-linux-x64}"
-echo "==> packaging single executable (target: $TARGET)"
+# Default: build both Linux and Windows. Set PKG_TARGET to build just one.
+TARGETS="${PKG_TARGET:-node22-linux-x64 node22-win-x64}"
+
 # --public --public-packages "*": V8 bytecode caching is tied to the host
 # platform's V8 build; cross-building (e.g. for Windows from Linux) produces
 # bytecode the target V8 rejects at startup. This ships plain JS instead,
 # avoiding that entirely (pkg's own error message recommends this combo).
-npx @yao-pkg/pkg . --targets "$TARGET" --public --public-packages "*" --output ../dist/tyk-dashboard-mcp
+for TARGET in $TARGETS; do
+  echo "==> packaging single executable (target: $TARGET)"
+  npx @yao-pkg/pkg . --targets "$TARGET" --public --public-packages "*" --output ../dist/tyk-dashboard-mcp
+done
 
-echo "==> done: dist/tyk-dashboard-mcp"
+echo "==> done: dist/tyk-dashboard-mcp, dist/tyk-dashboard-mcp.exe"
