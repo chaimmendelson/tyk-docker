@@ -11,4 +11,4 @@ services:
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/confs/domainNotFound.html:/usr/share/nginx/html/domainNotFound.html:ro
     networks:
-      - api-gateway-env
+      api-gateway-env:

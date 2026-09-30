@@ -23,7 +23,7 @@ services:
       timeout: 10s
       retries: 10
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   # Generates the shared mTLS cert/key the control plane and every data
   # plane use to authenticate the cluster connection. Written once into a
@@ -42,7 +42,7 @@ services:
     # loosen it or nginx fails to load the key with a permission error.
     command: sh -c "cd /cluster && ( [ -f cluster.crt ] || kong hybrid gen_cert ) && chmod 644 cluster.crt cluster.key"
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   kong-bootstrap:
     image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
@@ -56,7 +56,7 @@ services:
       KONG_PASSWORD: handyshake
     command: kong migrations bootstrap
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   kong-migrations:
     image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
@@ -75,7 +75,7 @@ services:
     # pending, e.g. right after a fresh kong-bootstrap.
     command: sh -c "kong migrations up && kong migrations finish"
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   kong-cp:
     image: kong/kong-gateway:${KONG_VERSION:-3.16.0.0}
@@ -109,7 +109,7 @@ services:
       - "8002:8002"
       - "8445:8445"
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
 volumes:
   kong-postgres-data:

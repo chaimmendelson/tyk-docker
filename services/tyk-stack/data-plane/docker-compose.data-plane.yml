@@ -6,5 +6,5 @@ services:
     env_file:
       - tyk-stack/data-plane/confs/gateway.conf
     networks:
-      - api-gateway-env
+      api-gateway-env:
  

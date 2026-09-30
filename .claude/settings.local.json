@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "tyk-docs",
+    "tandoor-recipes"
+  ]
+}

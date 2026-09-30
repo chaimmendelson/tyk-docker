@@ -21,6 +21,7 @@ declare -A STACK_FILES=(
   [oauth2]="tyk-stack/oauth2/docker-compose.oauth2.yml"
   [kong-control-plane]="kong/control-plane/docker-compose.kong.control-plane.yml"
   [kong-data-plane]="kong/data-plane/docker-compose.kong.data-plane.yml"
+  [recipes]="recipes/docker-compose.recipes.yml"
 )
 declare -A ENABLE_VARS=(
   [nginx]="ENABLE_NGINX"
@@ -30,6 +31,7 @@ declare -A ENABLE_VARS=(
   [oauth2]="ENABLE_OAUTH2"
   [kong-control-plane]="ENABLE_KONG_CONTROL_PLANE"
   [kong-data-plane]="ENABLE_KONG_DATA_PLANE"
+  [recipes]="ENABLE_RECIPES"
 )
 
 set -a

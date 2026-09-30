@@ -10,7 +10,7 @@ services:
     volumes:
       - ../ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   tyk-redis:
     image: redis
@@ -20,7 +20,7 @@ services:
     volumes:
       - redis-data:/data
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   # ---------------- MongoDB override services ----------------
   tyk-dashboard:
@@ -35,7 +35,7 @@ services:
     volumes:
       - ../ca/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   tyk-mdcb:
     image: tykio/tyk-mdcb-docker:${MDCB_VERSION:-v2.5.1}
@@ -47,7 +47,7 @@ services:
     volumes:
       - ./nginx/certs:/etc/mdcb/certs:ro
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
   tyk-mongo:
     image: mongo:latest
@@ -58,7 +58,7 @@ services:
     volumes:
       - mongo-data:/data/db
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
 # ---------------- Volumes ----------------
 volumes:

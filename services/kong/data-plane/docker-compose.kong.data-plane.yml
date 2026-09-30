@@ -21,7 +21,7 @@ services:
       - "8000:8000"
       - "8443:8443"
     networks:
-      - api-gateway-env
+      api-gateway-env:
 
 volumes:
   # Created by kong-stack/control-plane's kong-cluster-cert service — the

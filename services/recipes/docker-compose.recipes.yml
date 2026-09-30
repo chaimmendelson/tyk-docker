@@ -1,0 +1,62 @@
+services:
+  db_recipes:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: djangodb
+      POSTGRES_USER: djangouser
+      POSTGRES_PASSWORD: ${RECIPES_POSTGRES_PASSWORD:?set RECIPES_POSTGRES_PASSWORD in .env}
+    volumes:
+      - recipes_postgresql:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U djangouser -d djangodb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      api-gateway-env:
+
+  web_recipes:
+    image: vabene1111/recipes
+    restart: unless-stopped
+    container_name: recipes-web-ui
+    environment:
+      SECRET_KEY: ${RECIPES_SECRET_KEY:?set RECIPES_SECRET_KEY in .env}
+      TZ: Etc/UTC
+      ALLOWED_HOSTS: localhost,127.0.0.1,recipesweb,localhost:${TANDOOR_PORT:-6060},127.0.0.1:${TANDOOR_PORT:-6060},recipes.docker.local
+      DB_ENGINE: django.db.backends.postgresql
+      POSTGRES_HOST: db_recipes
+      POSTGRES_DB: djangodb
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: djangouser
+      POSTGRES_PASSWORD: ${RECIPES_POSTGRES_PASSWORD:?set RECIPES_POSTGRES_PASSWORD in .env}
+    ports:
+      - "${TANDOOR_PORT:-6060}:80"
+    volumes:
+      - recipes_staticfiles:/opt/recipes/staticfiles
+      - recipes_mediafiles:/opt/recipes/mediafiles
+    depends_on:
+      db_recipes:
+        condition: service_healthy
+    networks:
+      api-gateway-env:
+
+  mcp_recipes:
+    build:
+      context: recipes/mcp-server
+    environment:
+      TANDOOR_BASE_URL: http://recipesweb:80
+      TANDOOR_API_TOKEN: ${TANDOOR_API_TOKEN:?set TANDOOR_API_TOKEN in .env}
+    depends_on:
+      - web_recipes
+    stdin_open: true
+    networks:
+      api-gateway-env:
+
+volumes:
+  recipes_postgresql:
+    name: recipes_postgresql
+  recipes_staticfiles:
+    name: recipes_staticfiles
+  recipes_mediafiles:
+    name: recipes_mediafiles

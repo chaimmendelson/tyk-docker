@@ -2,6 +2,18 @@
   "mcpServers": {
     "tyk-docs": {
       "command": "/home/chaim/code/tyk-docker/mcps/docs/dist/tyk-docs-mcp"
+    },
+    "tandoor-recipes": {
+      "command": "docker",
+      "args": [
+        "compose",
+        "-f",
+        "/home/chaim/code/recipes/docker-compose.yml",
+        "run",
+        "--rm",
+        "-T",
+        "mcp_recipes"
+      ]
     }
   }
 }
