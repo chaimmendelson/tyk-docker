@@ -25,10 +25,4 @@ class Settings:
                 "TANDOOR_API_TOKEN is not set. Export it or put it in a .env file "
                 "loaded by your process manager before starting the server."
             )
-        timeout_raw = os.environ.get("TANDOOR_TIMEOUT", "30")
-        try:
-            timeout = float(timeout_raw)
-        except ValueError as exc:
-            raise ConfigError(f"TANDOOR_TIMEOUT must be a number, got {timeout_raw!r}") from exc
-
-        return cls(base_url=base_url, api_token=token, timeout=timeout)
+        return cls(base_url=base_url, api_token=token)

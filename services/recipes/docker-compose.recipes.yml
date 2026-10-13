@@ -31,25 +31,13 @@ services:
       POSTGRES_USER: djangouser
       POSTGRES_PASSWORD: ${RECIPES_POSTGRES_PASSWORD:?set RECIPES_POSTGRES_PASSWORD in .env}
     ports:
-      - "${TANDOOR_PORT:-6060}:80"
+      - "${TANDOOR_PORT:-6060}:80" # route
     volumes:
       - recipes_staticfiles:/opt/recipes/staticfiles
       - recipes_mediafiles:/opt/recipes/mediafiles
     depends_on:
       db_recipes:
         condition: service_healthy
-    networks:
-      api-gateway-env:
-
-  mcp_recipes:
-    build:
-      context: recipes/mcp-server
-    environment:
-      TANDOOR_BASE_URL: http://recipesweb:80
-      TANDOOR_API_TOKEN: ${TANDOOR_API_TOKEN:?set TANDOOR_API_TOKEN in .env}
-    depends_on:
-      - web_recipes
-    stdin_open: true
     networks:
       api-gateway-env:
 

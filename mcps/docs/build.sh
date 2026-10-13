@@ -72,4 +72,5 @@ for TARGET in $TARGETS; do
   npx @yao-pkg/pkg . --targets "$TARGET" --public --public-packages "*" --output ../dist/tyk-docs-mcp
 done
 
+chmod +x ../dist/tyk-docs-mcp 2>/dev/null || true
 echo "==> done: dist/tyk-docs-mcp, dist/tyk-docs-mcp.exe"

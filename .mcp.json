@@ -4,16 +4,11 @@
       "command": "/home/chaim/code/tyk-docker/mcps/docs/dist/tyk-docs-mcp"
     },
     "tandoor-recipes": {
-      "command": "docker",
-      "args": [
-        "compose",
-        "-f",
-        "/home/chaim/code/recipes/docker-compose.yml",
-        "run",
-        "--rm",
-        "-T",
-        "mcp_recipes"
-      ]
+      "command": "/home/chaim/code/tyk-docker/mcps/recipes/dist/tandoor-mcp",
+      "env": {
+        "TANDOOR_BASE_URL": "http://127.0.0.1:6060",
+        "TANDOOR_API_TOKEN": "tda_cdc0529b_0c4f_4e17_b6b0_bc819fee0a0c"
+      }
     }
   }
 }

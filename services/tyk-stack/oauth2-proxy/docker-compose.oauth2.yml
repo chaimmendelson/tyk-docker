@@ -31,6 +31,8 @@ services:
       
       - --footer="please contact!"
 
+    expose:
+      - "4180" # route: oauth2
     volumes:
       - ../ca:/etc/oauth2-proxy/certs:ro
       - ./tyk-stack/oauth2/confs/custom-templates:/etc/oauth2-proxy/custom-templates:ro
